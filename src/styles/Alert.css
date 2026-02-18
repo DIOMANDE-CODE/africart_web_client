@@ -1,0 +1,149 @@
+/* ===== ALERT FLOTTANTE ===== */
+.alert-floating {
+  position: fixed;
+  top: 32px;
+  right: 32px;
+  min-width: 260px;
+  max-width: 420px;
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+  animation: alertSlideIn 0.45s cubic-bezier(0.2,0.9,0.2,1);
+  transition: opacity 0.25s, transform 0.25s;
+  position: fixed;
+  right: 32px;
+  top: 32px;
+  background-clip: padding-box;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.alert-success {
+  background: linear-gradient(90deg, #eaf7f0 60%, #cdecd9 100%);
+  color: #1E7F43;
+  border: 1.5px solid #6fcf97;
+  --progress-color: rgba(30,127,67,0.9);
+}
+
+.alert-error {
+  background: linear-gradient(90deg, #fff4e6 60%, #ffe0b8 100%);
+  color: #d32f2f;
+  border: 1.5px solid #ffc680;
+  --progress-color: rgba(211,47,47,0.9);
+}
+
+.alert-info {
+  background: linear-gradient(90deg, #eef6ff 60%, #d9eaff 100%);
+  color: #155bdb;
+  border: 1.5px solid #9fc5ff;
+  --progress-color: rgba(21,91,219,0.9);
+}
+
+.alert-icon {
+  font-size: 1.3em;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.alert-success .alert-icon {
+  color: #1E7F43;
+}
+.alert-error .alert-icon {
+  color: #d32f2f;
+}
+
+.alert-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.alert-message {
+  word-break: break-word;
+  font-weight: 600;
+  line-height: 1.25;
+  font-size: 0.98rem;
+}
+
+.alert-floating:focus {
+  outline: none;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+}
+
+.alert-close {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 1.05em;
+  cursor: pointer;
+  margin-left: 8px;
+  opacity: 0.85;
+  transition: opacity 0.15s, transform 0.12s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 6px;
+}
+.alert-close:hover,
+.alert-close:focus {
+  opacity: 1;
+  transform: scale(1.04);
+  outline: none;
+}
+
+/* progress bar that shrinks to 0 */
+.alert-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--progress-color, rgba(0,0,0,0.2)), transparent);
+  transform-origin: left;
+  animation-name: alertProgress;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+.alert-floating:hover .alert-progress {
+  animation-play-state: paused;
+}
+
+@keyframes alertSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes alertProgress {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+/* Responsive: center bottom on small screens */
+@media (max-width: 640px) {
+  .alert-floating {
+    left: 50%;
+    right: auto;
+    top: auto;
+    bottom: 20px;
+    transform: translateX(-50%);
+    width: calc(100% - 32px);
+    max-width: 720px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 0.95rem;
+  }
+  .alert-message { font-size: 0.95rem; }
+}
