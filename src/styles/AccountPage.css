@@ -162,6 +162,14 @@
   background: linear-gradient(90deg, #34D399, #10B981);
 }
 
+/* Cancelled orders */
+.status-annule,
+.status-annulee,
+.status-annulee_,
+.status-annulé {
+  background: linear-gradient(90deg, #EF4444, #DC2626);
+}
+
 .order-items {
   display: flex;
   gap: var(--space-sm);
@@ -183,7 +191,49 @@
   .order-item-img img { width: 50px; height: 50px; }
 }
 
+.order-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--neutral-200);
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
 .summary-item span { color: var(--neutral-600); margin-right: var(--space-sm); }
+
+.btn-receipt {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.2rem;
+  background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.2);
+}
+
+.btn-receipt:hover {
+  background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+}
+
+.btn-receipt:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(255, 107, 107, 0.2);
+}
+
+.btn-receipt i {
+  font-size: 1rem;
+}
 
 /* Addresses */
 .address-card h4 { margin: 0 0 var(--space-sm) 0; }
@@ -318,6 +368,16 @@
   
   .profile-form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .order-footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .btn-receipt {
+    width: 100%;
+    justify-content: center;
   }
 }
 

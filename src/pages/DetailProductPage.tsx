@@ -1,3 +1,4 @@
+import { StarRating } from "../components/StarRating";
 import "../styles/DetailProductPage.css";
 import { useParams } from "react-router-dom";
 import { useState } from "react";
@@ -6,18 +7,30 @@ import { useEffect } from "react";
 import type { Product } from "../interfaces/Product";
 import { toUpperCase } from "../utils/upperCase";
 import { useCart } from "../context/CartContext";
+import { useAuth } from "../context/AuthContext";
 import { Alert } from "../components/Alert";
 import { ProductDetailSkeleton } from "../skeletons";
 
 export const DetailProductPage = () => {
+    const { user } = useAuth();
+    // ...existing code...
+    // State pour la note moyenne
+    const [averageRating, setAverageRating] = useState<number | null>(null);
+    const [averageCount, setAverageCount] = useState<number>(0);
     const { id } = useParams<{ id: string }>();
     const [detailProduct, setDetailProduct] = useState<Product>();
-    const [loading, setLoading] = useState(false);
+    // On retire le loader, on utilise juste le skeleton
+    const [loading, setLoading] = useState(true);
     const [selectedImage, setSelectedImage] = useState<string | undefined>(undefined);
     const [alert, setAlert] = useState<{ message: string; type: "success" | "error" } | null>(null);
     // UseState pour passer une commande
     const [productQty, setProductQty] = useState(1);
     const { addToCart, updateCartItem, cart } = useCart();
+    // Système de notation par étoiles
+    const [rating, setRating] = useState(0);
+    const [ratingSent, setRatingSent] = useState(false);
+    const [ratingError, setRatingError] = useState<string | null>(null);
+    const [ratingDisabled, setRatingDisabled] = useState(false);
 
 
     const reduceQty = (qty: number) => {
@@ -35,20 +48,54 @@ export const DetailProductPage = () => {
 
 
 
+    // Fonction pour envoyer la note à l'API Django
+    const handleRate = async (newRating: number) => {
+        setRatingError(null);
+        setRating(newRating);
+        if (!detailProduct?.identifiant_produit) return;
+        try {
+            const response = await api.post(`/produits/noter/${detailProduct.identifiant_produit}/`, { note_produit: newRating });
+            if (response.data.success) {
+                setRatingSent(true);
+                setRatingDisabled(true);
+                setAlert({ message: response.data.message || "Merci pour votre note !", type: "success" });
+            } else {
+                setRatingSent(false);
+                setRatingError(response.data.errors || "Erreur lors de la notation.");
+            }
+        } catch (error: any) {
+            if (error.response && error.response.data && error.response.data.errors) {
+                setRatingError(error.response.data.errors);
+                if (error.response.data.errors.includes("déjà noté")) setRatingDisabled(true);
+            } else {
+                setRatingError("Erreur lors de l'envoi de la note.");
+            }
+            setRatingSent(false);
+        }
+    };
+
+
+
     // Fonction pour récupérer les détails du produit depuis l'API
     const fetchProductDetails = async () => {
-        setLoading(true);
         try {
             const response = await api.get(`/produits/detail/${id}`);
             if (response.status === 200) {
                 setDetailProduct(response.data.data);
-                console.log(response.data.data);
+            }
+            // Récupérer la note moyenne
+            const avgRes = await api.get(`/produits/note_moyenne/${id}`);
+            if (avgRes.data.success && avgRes.data.data) {
+                setAverageRating(avgRes.data.data.note_moyenne);
+                setAverageCount(avgRes.data.data.nombre_notations);
+            } else {
+                setAverageRating(null);
+                setAverageCount(0);
             }
         }
         catch (error: any) {
             if (error.response) {
                 const status = error.response.status;
-
                 if (status === 400) {
                     setAlert({ message: "Erreur de saisie.", type: "error" });
                 } else if (status === 500) {
@@ -63,7 +110,6 @@ export const DetailProductPage = () => {
         finally {
             setLoading(false);
         }
-
     }
 
     // Ajout au panier : empêche doublon, met à jour si déjà présent
@@ -107,7 +153,7 @@ export const DetailProductPage = () => {
             <section className="page active" id="product-detail-page">
                 <ProductDetailSkeleton />
             </section>
-        )
+        );
     }
 
     return (
@@ -115,6 +161,7 @@ export const DetailProductPage = () => {
             {/* Page Détail Produit */}
             <section className="page active" id="product-detail-page">
                 <div className="container product-detail-page">
+                    {/* ...existing code... */}
                     <div className="product-detail" id="productDetailContainer">
                         <div className="product-gallery">
                             <div className="main-image">
@@ -158,11 +205,20 @@ export const DetailProductPage = () => {
                             </div>
                         </div>
                         <div className="product-info">
-                            <h1>{toUpperCase(detailProduct?.nom_produit || "")}</h1>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <h1 style={{ margin: 0 }}>{toUpperCase(detailProduct?.nom_produit || "")}</h1>
+                                {averageRating !== null && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                        <StarRating rating={Math.round(averageRating)} onRate={() => { }} />
+                                        <span style={{ fontSize: 14, color: '#888' }}>({averageRating} / 5, {averageCount} avis)</span>
+                                    </div>
+                                )}
+                            </div>
                             {/* Affichage du stock */}
                             {typeof detailProduct?.quantite_produit_disponible === 'number' && (
                                 <div className="product-stock-info">
-                                    <i className="fas fa-box"></i> Stock : {detailProduct.quantite_produit_disponible} disponible{detailProduct.quantite_produit_disponible > 1 ? 's' : ''}
+                                    <i className="fas fa-box"></i> Stock : {detailProduct.quantite_produit_disponible} Kg disponible{detailProduct.quantite_produit_disponible > 1 ? 's' : ''}
                                 </div>
                             )}
                             {/* <div className="product-meta">
@@ -273,8 +329,14 @@ export const DetailProductPage = () => {
                                     <a href="/products">Continuer les achats</a>
                                 </button>
                             </div>
-
-
+                            {/* Bloc de notation par étoiles */}
+                            {user && !ratingDisabled && (
+                                <div style={{ marginBottom: 16, textAlign: "center", paddingInline: 16 }}>
+                                    <h3>Notez ce produit :</h3>
+                                    <StarRating rating={rating} onRate={handleRate} />
+                                    {ratingError && <div style={{ color: '#dc3545', marginTop: 8 }}>{ratingError}</div>}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

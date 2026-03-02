@@ -40,7 +40,7 @@ export const Login = () => {
     try {
       const response = await api.post(
         "/authentification/login/",
-        { email_utilisateur: email, password }
+        { email_utilisateur: email, password: password }
       );
 
       if (response.status === 200) {
@@ -130,8 +130,8 @@ export const Login = () => {
 
         <div className="login-split-image login-animate-slideright">
           <img
-            src="https://images.unsplash.com/photo-1519125323398-675f0ddb6308?auto=format&fit=crop&w=600&q=80"
-            alt="Shopping africain"
+            src="https://images.unsplash.com/photo-1631021967261-c57ee4dfa9bb?q=80&w=870&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+            alt="Produits vivriers"
           />
         </div>
       </div>

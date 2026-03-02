@@ -6,9 +6,17 @@ interface Produit {
 interface DetailCommande {
     produit : Produit;
     quantite: string;
+    sous_total: string;
+    prix_unitaire: string;
 }
 
-export interface Commande {
+interface Client {
+    nom_client: string;
+    numero_telephone_client: string;
+}
+
+export interface RecuCommande {
+    client: Client;
     identifiant_commande: string;
     code_livraison: string;
     date_commande: string;
@@ -16,6 +24,6 @@ export interface Commande {
     lieu_livraison: string;
     total_ht: string;
     total_ttc: string;
-    frais_livraison_appliques?: string;
     details_commandes?: DetailCommande[];
+    frais_livraison_appliques: string;
 }

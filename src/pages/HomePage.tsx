@@ -6,17 +6,19 @@ import api from "../services/api";
 import type { Category } from "../interfaces/Category";
 import { useAuth } from "../context/AuthContext";
 import { Alert } from "../components/Alert";
-
+import { CategoryCarouselSkeleton } from "../skeletons";
 
 export const HomePage = () => {
 
     // Creation des useState
     const [category, setCategory] = useState<Category[]>([]);
+    const [loading, setLoading] = useState(true);
     const { user, } = useAuth();
     const [alert, setAlert] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
     // Fonction pour recuperer les categories
     const fetchCategories = async () => {
+        setLoading(true);
         try {
             const response = await api.get("/produits/list/categorie/");
             if (response.status === 200) {
@@ -36,15 +38,17 @@ export const HomePage = () => {
                     setAlert({ message: "Erreur inconnue.", type: "error" });
                 }
             }
+        } finally {
+            setLoading(false);
         }
     }
 
 
     // Images du carrousel hero
     const heroImages = [
-        "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-        "https://images.unsplash.com/photo-1519125323398-675f0ddb6308?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-        "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+        "https://images.unsplash.com/photo-1646770258140-bdf4fce412bf?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTZ8fHZpdnJpZXJzfGVufDB8fDB8fHww",
+        "https://plus.unsplash.com/premium_photo-1675798983878-604c09f6d154?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8bGVndW1lfGVufDB8fDB8fHww",
+        "https://images.unsplash.com/photo-1590779033100-9f60a05a013d?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8bGVndW1lfGVufDB8fDB8fHww"
     ];
 
     const [currentHero, setCurrentHero] = useState(0);
@@ -70,14 +74,12 @@ export const HomePage = () => {
                     <div className="container">
                         <div className="hero-content">
                             <div className="hero-text">
-                                <span className="hero-badge">Nouveau : IA Shopping</span>
+                                <span className="hero-badge">Africart : Mon marché en ligne </span>
                                 <h1 className="hero-title">
-                                    L'expérience shopping réinventée pour l'Afrique
+                                    L'expérience du marché public réinventée
                                 </h1>
                                 <p className="hero-description">
-                                    Découvrez une plateforme e-commerce intelligente avec
-                                    recommandations personnalisées, livraison ultra-rapide et
-                                    paiements 100% sécurisés.
+                                    Découvrez notre plateforme e-commerce qui vous permet de faire votre marché depuis vous.
                                 </p>
                                 {
                                     !user && (
@@ -130,9 +132,17 @@ export const HomePage = () => {
                             </Link>
                         </div>
 
-                        {category.slice(0, 5).map((c) => (
-                            <CategoryCarousel key={c.identifiant_categorie} title={c.nom_categorie} products={c.produits} />
-                        ))}
+                        {loading ? (
+                            <>
+                                <CategoryCarouselSkeleton />
+                                <CategoryCarouselSkeleton />
+                                <CategoryCarouselSkeleton />
+                            </>
+                        ) : (
+                            category.slice(0, 5).map((c) => (
+                                <CategoryCarousel key={c.identifiant_categorie} title={c.nom_categorie} products={c.produits} />
+                            ))
+                        )}
 
                         {/* <div className="view-more-section">
                             <Link to="/products" className="btn btn-primary btn-lg">

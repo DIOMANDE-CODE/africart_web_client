@@ -1,0 +1,211 @@
+/* ===== CHECKOUT SKELETON STYLES ===== */
+
+.checkout-skeleton-container {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: var(--space-xl);
+    margin-top: var(--space-xl);
+}
+
+/* ===== SKELETON BASE STYLES ===== */
+.skeleton-title-main,
+.skeleton-subtitle,
+.skeleton-label,
+.skeleton-input,
+.skeleton-map,
+.skeleton-text-small,
+.skeleton-payment-option,
+.skeleton-summary-item,
+.skeleton-divider,
+.skeleton-total-line,
+.skeleton-button-large {
+    background: linear-gradient(90deg, #e6e6e6 25%, #f0f0f0 50%, #e6e6e6 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: var(--radius-sm);
+    position: relative;
+    overflow: hidden;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* ===== SPECIFIC SKELETON ELEMENTS ===== */
+
+.skeleton-title-main {
+    width: 300px;
+    height: 36px;
+    margin-bottom: var(--space-lg);
+    border-radius: var(--radius-md);
+}
+
+.skeleton-subtitle {
+    width: 200px;
+    height: 24px;
+    margin-bottom: var(--space-lg);
+}
+
+/* ===== FORM SECTION ===== */
+.checkout-skeleton-form {
+    background: white;
+    border: 1px solid var(--neutral-200);
+    border-radius: var(--radius-lg);
+    padding: var(--space-xl);
+    box-shadow: var(--shadow-sm);
+}
+
+.skeleton-map-section {
+    margin-bottom: var(--space-lg);
+}
+
+.skeleton-label {
+    width: 180px;
+    height: 16px;
+    margin-bottom: var(--space-sm);
+}
+
+.skeleton-map {
+    width: 100%;
+    height: 300px;
+    margin-bottom: var(--space-sm);
+    border-radius: var(--radius-md);
+}
+
+.skeleton-text-small {
+    width: 250px;
+    height: 14px;
+    margin-bottom: var(--space-md);
+}
+
+.skeleton-form-group {
+    margin-bottom: var(--space-lg);
+}
+
+.skeleton-input {
+    width: 100%;
+    height: 48px;
+}
+
+/* ===== PAYMENT SECTION ===== */
+.skeleton-payment-section {
+    margin-top: var(--space-xl);
+    padding-top: var(--space-lg);
+    border-top: 1px solid var(--neutral-200);
+}
+
+.skeleton-payment-option {
+    width: 100%;
+    height: 80px;
+    border-radius: var(--radius-md);
+}
+
+/* ===== SUMMARY SECTION ===== */
+.checkout-skeleton-summary {
+    background: white;
+    border: 1px solid var(--neutral-200);
+    border-radius: var(--radius-lg);
+    padding: var(--space-xl);
+    box-shadow: var(--shadow-sm);
+    height: fit-content;
+    position: sticky;
+    top: 100px;
+}
+
+.skeleton-summary-items {
+    margin-top: var(--space-lg);
+}
+
+.skeleton-summary-item {
+    width: 100%;
+    height: 20px;
+    margin-bottom: var(--space-md);
+}
+
+.skeleton-divider {
+    width: 100%;
+    height: 1px;
+    margin: var(--space-lg) 0;
+    background: var(--neutral-200);
+}
+
+.skeleton-total-section {
+    margin-top: var(--space-lg);
+    padding-top: var(--space-md);
+    border-top: 2px solid var(--neutral-300);
+}
+
+.skeleton-total-line {
+    width: 100%;
+    height: 28px;
+}
+
+.skeleton-button-large {
+    width: 100%;
+    height: 50px;
+    margin-top: var(--space-lg);
+    border-radius: var(--radius-sm);
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+
+/* Tablet (768px - 1023px) */
+@media (max-width: 1023px) {
+    .checkout-skeleton-container {
+        grid-template-columns: 1fr;
+        gap: var(--space-lg);
+    }
+    
+    .checkout-skeleton-summary {
+        position: relative;
+        top: 0;
+    }
+    
+    .skeleton-map {
+        height: 250px;
+    }
+}
+
+/* Mobile (320px - 767px) */
+@media (max-width: 767px) {
+    .checkout-skeleton-form,
+    .checkout-skeleton-summary {
+        padding: var(--space-lg);
+    }
+    
+    .skeleton-title-main {
+        width: 100%;
+        max-width: 250px;
+        height: 30px;
+    }
+    
+    .skeleton-subtitle {
+        width: 160px;
+        height: 20px;
+    }
+    
+    .skeleton-map {
+        height: 200px;
+    }
+    
+    .skeleton-payment-option {
+        height: 70px;
+    }
+}
+
+/* Extra Small Mobile (max 374px) */
+@media (max-width: 374px) {
+    .checkout-skeleton-form,
+    .checkout-skeleton-summary {
+        padding: var(--space-md);
+    }
+    
+    .skeleton-map {
+        height: 180px;
+    }
+}

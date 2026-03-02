@@ -30,10 +30,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Déconnexion
   const logout = async () => {
     try {
-      await api.post("/authentification/logout/");
+      await api.get("/authentification/logout/");
       setUser(null);
       localStorage.removeItem("africart_cart")
-      navigate("/login");
+      sessionStorage.removeItem("identifiant_commande");
+      navigate("/");
     } catch (error: any) {
       console.error("Erreur lors de la déconnexion:", error.message || "Erreur survenue");
     }
@@ -42,7 +43,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Vérification de session via cookie HttpOnly
   const checkSession = async () => {
     try {
-      const response = await api.get("/authentification/check_session/");
+      const response = await api.get("/authentification/check_session/", {
+        withCredentials: true
+      });
       if (response.data.authenticated) {
         await fetchUserInfo(); // Récupère les infos utilisateur si authentifié
       } else {

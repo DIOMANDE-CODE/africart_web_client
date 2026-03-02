@@ -1,8 +1,6 @@
 import './App.css'
-import { useEffect, useState } from 'react'
 import { Header } from './components/Header'
 import { Footer } from './components/Footer'
-import { Preloader } from './components/Preloader'
 import { Route, Routes, useLocation } from 'react-router-dom'
 import { HomePage } from './pages/HomePage'
 import { ProductsPage } from './pages/ProductsPage'
@@ -10,6 +8,7 @@ import { AccountPage } from './pages/AccountPage'
 import { DetailProductPage } from './pages/DetailProductPage'
 import { CheckoutPage } from './pages/CheckoutPage'
 import { ConfirmationPage } from './pages/ConfirmationPage'
+import { ReceiptPage } from './pages/ReceiptPage'
 import { CartProvider } from './context/CartContext'
 import { Login } from './pages/authentification/Login'
 import { Register } from './pages/authentification/Register'
@@ -18,24 +17,10 @@ import { PrivateRoute, PublicRoute } from './components/LockRoute'
 
 function App() {
   const location = useLocation();
-  const [showPreloader, setShowPreloader] = useState(true)
-
-  useEffect(() => {
-    const hide = () => setTimeout(() => setShowPreloader(false), 600)
-    if (document.readyState === 'complete') {
-      hide()
-    } else {
-      window.addEventListener('load', hide)
-      return () => window.removeEventListener('load', hide)
-    }
-  }, [])
 
   // Vérifie si on est sur la page login
   const isLoginPage = location.pathname === "/login" || location.pathname === "/register";
 
-  if (showPreloader) {
-    return <Preloader />
-  }
 
   return (
     <AuthProvider>
@@ -89,6 +74,14 @@ function App() {
               element={
                 <PrivateRoute>
                   <ConfirmationPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/receipt/:id"
+              element={
+                <PrivateRoute>
+                  <ReceiptPage />
                 </PrivateRoute>
               }
             />

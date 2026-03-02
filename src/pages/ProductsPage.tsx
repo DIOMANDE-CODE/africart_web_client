@@ -4,9 +4,11 @@ import type { Category } from '../interfaces/Category';
 import type { Product } from '../interfaces/Product';
 import api from '../services/api';
 import { SmallLoader } from '../components/Loader';
+import { ProductRating } from '../components/ProductRating';
 import { useCart } from '../context/CartContext';
 import { ProductSkeletonGrid } from '../skeletons';
 import SearchInput from '../components/SearchInput';
+import { isNewArrival } from '../utils/isNewArrival';
 
 export const ProductsPage = () => {
 
@@ -194,9 +196,9 @@ export const ProductsPage = () => {
                     {/* Carrousel de bannières */}
                     <div className="products-hero-carousel">
                         {[
-                            "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80",
-                            "https://images.unsplash.com/photo-1519125323398-675f0ddb6308?auto=format&fit=crop&w=1200&q=80",
-                            "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=1200&q=80"
+                            "https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTh8fGxlZ3VtZXxlbnwwfHwwfHx8MA%3D%3D",
+                            "https://plus.unsplash.com/premium_photo-1673108852141-e8c3c22a4a22?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8bm91cnJpdHVyZXxlbnwwfHwwfHx8MA%3D%3D",
+                            "https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTV8fG5vdXJyaXR1cmV8ZW58MHx8MHx8fDA%3D"
                         ].map((img, idx) => (
                             <div
                                 key={idx}
@@ -213,7 +215,7 @@ export const ProductsPage = () => {
                     <div className="products-search-section mb-5">
                         <div className="search-wrapper">
                             <div className="search-input-group">
-                               <SearchInput setSearch={setSearch} />
+                                <SearchInput setSearch={setSearch} />
                             </div>
                         </div>
                     </div>
@@ -324,12 +326,24 @@ export const ProductsPage = () => {
                                         <div className="product-card card card-hover fade-in" data-id={1} key={p.identifiant_produit}>
                                             <div className="product-image">
                                                 <img
-                                                    src={p.image_produit}
+                                                    src={p.thumbnail || ''}
                                                     alt={p.nom_produit}
                                                 />
-                                                {/* <div className="product-badges">
-                                                    <span className="badge badge-secondary">Promo</span>
-                                                </div> */}
+                                                <div className="product-badges">
+                                                    {/* <span className="badge badge-secondary">
+                                                        <i className="fas fa-bolt" style={{ marginRight: 6, color: '#fff700', filter: 'drop-shadow(0 0 2px #ff9800)' }}></i>
+                                                        Promo
+                                                    </span> */}
+                                                    {
+                                                        isNewArrival(p.date_creation || '') && (
+                                                            <span className="badge badge-nouveaute">
+                                                                <i className="fas fa-star" style={{ marginRight: 6, color: '#fffde7', filter: 'drop-shadow(0 0 2px #00c6ff)' }}></i>
+                                                                Nouveauté
+                                                            </span>
+                                                        )
+                                                    }
+
+                                                </div>
                                                 <div className="product-actions">
                                                     {
                                                         cart.length > 0 && cart.some(item => item.identifiant_produit === p.identifiant_produit) ? (
@@ -357,7 +371,7 @@ export const ProductsPage = () => {
                                                     <div className="stars">
                                                         <i className="fas fa-star" />
                                                     </div>
-                                                    <span className="rating-count">(128)</span>
+                                                    <ProductRating productId={p.identifiant_produit} />
                                                 </div>
                                                 <div className="product-price">
                                                     <span className="current-price">{p.prix_unitaire_produit} FCFA</span>

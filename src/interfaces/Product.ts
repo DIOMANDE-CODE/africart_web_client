@@ -19,4 +19,5 @@ export interface Product {
     quantite_produit?: number; // Quantité ajoutée au panier
     description_produit?:string;
     caracteristiques_produit?:string;
+    date_creation?: string;
 }

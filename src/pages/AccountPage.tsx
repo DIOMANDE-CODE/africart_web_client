@@ -8,6 +8,7 @@ import { formatDate } from "../utils/formatDate";
 import { validateEmail } from "../utils/emailChecking";
 import { validationNumeroCI } from "../utils/validerNumero";
 import AccountSkeleton from "../skeletons/AccountSkeleton";
+import { useNavigate } from "react-router-dom";
 
 export const AccountPage = () => {
     const [activeTab, setActiveTab] = useState("profile");
@@ -24,6 +25,7 @@ export const AccountPage = () => {
     const [isLoadingProfile, setIsLoadingProfile] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
     const [isLoadingPassword, setIsLoadingPassword] = useState(false)
+    const navigate = useNavigate();
 
     // Initialiser les champs avec les données de l'utilisateur
     useEffect(() => {
@@ -50,6 +52,10 @@ export const AccountPage = () => {
         e.preventDefault(); // empêche le scroll vers #
         setActiveTab(tab);
     };
+
+    const voirRecu = (id: string) => {
+        navigate(`/receipt/${id}`);
+    }
 
     const ListeCommandeClient = async () => {
         setIsLoading(true)
@@ -136,7 +142,7 @@ export const AccountPage = () => {
             return;
         }
 
-        if (nouveauMdp === ancienMdp){
+        if (nouveauMdp === ancienMdp) {
             setAlert({ message: "Le nouveau mot de passe doit être différent de l'actuel mot de passe.", type: "error" });
             return;
         }
@@ -319,8 +325,8 @@ export const AccountPage = () => {
                                             onChange={(e) => setConfirmMdp(e.target.value)}
                                         />
                                     </div>
-                                    <button 
-                                        className="btn btn-primary mt-4" 
+                                    <button
+                                        className="btn btn-primary mt-4"
                                         onClick={handleUpdatePassword}
                                         disabled={isLoadingPassword}
                                         style={{ opacity: isLoadingPassword ? 0.5 : 1, cursor: isLoadingPassword ? 'not-allowed' : 'pointer' }}
@@ -350,41 +356,57 @@ export const AccountPage = () => {
                                 </p> */}
                                 <div className="order-history mt-4">
                                     {/* Commande 1 */}
-                                    {
-                                        commandes && commandes.map((comm) => (
-                                            <div className="order-card" key={comm.identifiant_commande}>
-                                                <div className="order-header">
-                                                    <div>
-                                                        <h5>{comm.identifiant_commande}</h5>
-                                                        <small style={{ fontWeight: "bold" }}>Date et Heure : </small>
-                                                        <small>{formatDate(comm.date_commande)}</small>
-                                                        <br></br>
-                                                        <small style={{ fontWeight: "bold" }}>Lieu de livraison : </small>
-                                                        <small>{comm.lieu_livraison}</small>
 
+                                    {
+                                        commandes && commandes.map((comm) => {
+                                            const rawEtat = (comm.etat_commande || '').toString();
+                                            const normalizedEtat = rawEtat
+                                                .toLowerCase()
+                                                .normalize('NFD')
+                                                .replace(/\p{Diacritic}/gu, '')
+                                                .replace(/[^a-z0-9_]+/gi, '_');
+
+                                            let displayEtat = rawEtat;
+                                            switch (normalizedEtat) {
+                                                case 'en_cours':
+                                                    displayEtat = 'En cours';
+                                                    break;
+                                                case 'valide':
+                                                    displayEtat = 'En Livraison...';
+                                                    break;
+                                                case 'livre':
+                                                    displayEtat = 'Livrée';
+                                                    break;
+                                                case 'annule':
+                                                case 'annulee':
+                                                case 'annulee_':
+                                                    displayEtat = 'Annulée';
+                                                    break;
+                                                default:
+                                                    displayEtat = rawEtat;
+                                            }
+
+                                            return (
+                                                <div className="order-card" key={comm.identifiant_commande}>
+                                                    <div className="order-header">
+                                                        <div>
+                                                            <h5>{comm.identifiant_commande}</h5>
+                                                            <small style={{ fontWeight: "bold" }}>Date et Heure : </small>
+                                                            <small>{formatDate(comm.date_commande)}</small>
+
+                                                        </div>
                                                         {
-                                                            comm.lieu_livraison.toLowerCase() !== 'yamoussoukro' && (
-                                                                <>
-                                                                    <br></br>
-                                                                    <small style={{ fontWeight: "bold" }}>Montant de livraison : </small>
-                                                                    <small>2000 FCFA</small>
-                                                                </>
+                                                            comm.etat_commande && (
+                                                                <div className={`order-status status-${normalizedEtat}`}>
+                                                                    {displayEtat}
+                                                                </div>
                                                             )
                                                         }
-                                                    </div>
-                                                    {
-                                                        comm.etat_commande && (
-                                                            <div className={`order-status status-${comm.etat_commande}`}>
-                                                                {comm.etat_commande === "en_cours" ? "En cours" : comm.etat_commande === "valide" ? "Validée" : comm.etat_commande === "livre" ? "Livrée" : comm.etat_commande}
-                                                            </div>
-                                                        )
-                                                    }
 
-                                                </div>
-                                                <div className="order-items">
-                                                    {
-                                                        comm.details_commandes?.map((detail) => (
-                                                            <>
+                                                    </div>
+                                                    <div className="order-items">
+                                                        {
+                                                            comm.details_commandes?.map((detail) => (
                                                                 <div className="order-item-img" key={detail.produit.thumbnail}>
                                                                     <img
                                                                         src={detail.produit.thumbnail}
@@ -395,20 +417,32 @@ export const AccountPage = () => {
                                                                         x {detail.quantite}
                                                                     </div>
                                                                 </div>
-                                                            </>
-                                                        ))
-                                                    }
+                                                            ))
+                                                        }
 
 
-                                                </div>
-                                                <div className="order-footer">
-                                                    <div className="summary-item">
-                                                        <span>Total</span>
-                                                        <strong>{comm.total_ttc} FCFA</strong>
+                                                    </div>
+                                                    <div className="order-footer">
+                                                        <div className="summary-item">
+                                                            <span>Total</span>
+                                                            <strong>
+                                                                {(
+                                                                    parseFloat(comm.total_ht) +
+                                                                    (comm.frais_livraison_appliques ? parseFloat(comm.frais_livraison_appliques) : 0)
+                                                                ).toLocaleString()} FCFA
+                                                            </strong>
+                                                        </div>
+                                                        <button
+                                                            className="btn-receipt"
+                                                            onClick={() => voirRecu(comm.identifiant_commande)}
+                                                        >
+                                                            <i className="fas fa-receipt"></i>
+                                                            Voir le reçu
+                                                        </button>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        ))
+                                            )
+                                        })
                                     }
 
                                 </div>

@@ -106,7 +106,7 @@ export const CategoryCarousel: React.FC<Props> = ({ title, products }) => {
           <article className="carousel-item" key={p.identifiant_produit} role="listitem">
             <a href={`/products/detail/${p.identifiant_produit}`}>
               <div className="item-image">
-                <img src={p.image_produit} alt={p.nom_produit} loading="lazy" />
+                <img src={p.thumbnail} alt={p.nom_produit} loading="lazy" />
               </div>
               <div className="item-body">
                 <div className="item-title">{p.nom_produit}</div>

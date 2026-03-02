@@ -1,287 +1,301 @@
 import "../styles/CheckoutPage.css";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import { Alert } from "../components/Alert";
 import api from "../services/api";
 import { useNavigate } from "react-router-dom";
+import MapDelivery from "../components/MapDelivery";
+import CheckoutSkeleton from "../skeletons/CheckoutSkeleton";
+
+interface Zone {
+    identifiant_zone: string;
+    nom_zone: string;
+    frais_livraison: number;
+    latitude: number;
+    longitude: number;
+    rayon_metres: number;
+}
 
 export const CheckoutPage = () => {
+    const { cart, clearCart } = useCart();
+    const { user } = useAuth();
+    const navigate = useNavigate();
 
-    const { cart, clearCart } = useCart()
-    const { user } = useAuth()
-    const [ville, setVille] = useState("")
+    // États du formulaire
+    const [ville, setVille] = useState("");
+    const [isFetchingAddress, setIsFetchingAddress] = useState(false);
+    const [suggestions, setSuggestions] = useState<any[]>([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+
+    // Correction du type NodeJS.Timeout
+    const geocodeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const [zones, setZones] = useState<Zone[]>([]);
+    const [selectedZone, setSelectedZone] = useState<Zone | null>(null);
+    const [coords, setCoords] = useState<[number, number] | null>(null);
     const [alert, setAlert] = useState<{ message: string; type: "success" | "error" } | null>(null);
-    const [loading, setLoading] = useState(false)
-    const navigate = useNavigate()
+    const [loading, setLoading] = useState(false);
+    const [isLoadingZones, setIsLoadingZones] = useState(true);
 
-    // Rediriger vers l'accueil si le panier est vide (commande déjà validée)
+    // 1. Charger les zones au montage
     useEffect(() => {
-        if (cart.length === 0) {
-            navigate("/");
-        }
-    }, [navigate]);
+        const fetchZones = async () => {
+            setIsLoadingZones(true);
+            try {
+                const response = await api.get("/commandes/zone_livraison/list/");
+                console.log(response.data.data);
+                setZones(response.data.data)
+            } catch (error) {
+                console.error("Erreur zones:", error);
+            } finally {
+                setIsLoadingZones(false);
+            }
+        };
+        fetchZones();
+    }, []);
 
-    // Calcul dynamique du total du panier
-    const total = cart.reduce((sum, item) => {
-        const prix = parseFloat(item.prix_unitaire_produit.toString().replace(/\s/g, ''));
-        return sum + (isNaN(prix) ? 0 : prix * (item.quantite_produit || 1));
-    }, 0);
-
-    // Validation de la commande
-    const validezCommande = async () => {
-        // Verifier que tous les champs sont rempli
-        if (!ville.trim()) {
-            setAlert({ message: "Veuillez saisir le lieu de livraison", type: "error" })
+    // 2. Géocodage des suggestions (quand l'utilisateur tape)
+    useEffect(() => {
+        if (!ville.trim() || isFetchingAddress) {
+            setSuggestions([]);
+            setShowSuggestions(false);
             return;
         }
 
-        // Envoyez la commande
-        setLoading(true)
+        if (geocodeTimeout.current) clearTimeout(geocodeTimeout.current);
+
+        geocodeTimeout.current = setTimeout(async () => {
+            try {
+                const response = await fetch(
+                    `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(ville)}&countrycodes=ci`
+                );
+                const data = await response.json();
+                if (data && data.length > 0) {
+                    setSuggestions(data);
+                    setShowSuggestions(true);
+                }
+            } catch (err) {
+                console.error("Erreur géocodage:", err);
+            }
+        }, 800); // Augmenté à 800ms pour économiser l'API Nominatim
+
+        return () => { if (geocodeTimeout.current) clearTimeout(geocodeTimeout.current); };
+    }, [ville, isFetchingAddress]);
+
+    // 3. Mise à jour automatique de la zone sélectionnée lorsque le lieu de livraison change
+    useEffect(() => {
+        if (ville.trim() && zones.length > 0) {
+            const matchingZone = zones.find(zone => ville.toLowerCase().includes(zone.nom_zone.toLowerCase()));
+            if (matchingZone) {
+                setSelectedZone(matchingZone);
+                setCoords([matchingZone.latitude, matchingZone.longitude]);
+            }
+        }
+    }, [ville, zones]);
+
+    // 4. Mise à jour automatique du lieu de livraison lorsque la zone est sélectionnée
+    useEffect(() => {
+        if (selectedZone) {
+            setVille(selectedZone.nom_zone);
+            setCoords([selectedZone.latitude, selectedZone.longitude]);
+        }
+    }, [selectedZone]);
+
+    // 5. Calculs financiers
+    const sousTotal = useMemo(() => {
+        return cart.reduce((sum, item) => {
+            const prix = parseFloat(item.prix_unitaire_produit.toString().replace(/\s/g, ''));
+            return sum + (isNaN(prix) ? 0 : prix * (item.quantite_produit || 1));
+        }, 0);
+    }, [cart]);
+
+    const fraisLivraison = selectedZone ? Number(selectedZone.frais_livraison) : 300;
+    const totalTTC = sousTotal + fraisLivraison;
+
+    // 6. Fonction pour récupérer l'adresse textuelle depuis les coordonnées
+    const reverseGeocode = async (lat: number, lon: number) => {
+        setIsFetchingAddress(true);
+        try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+            const data = await res.json();
+            if (data && data.display_name) {
+                setVille(data.display_name);
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setIsFetchingAddress(false);
+            setShowSuggestions(false);
+        }
+    };
+
+    const validezCommande = async () => {
+        if (!ville.trim()) {
+            setAlert({ message: "Veuillez préciser le lieu de livraison", type: "error" });
+            return;
+        }
+
+        setLoading(true);
         const commande = {
             client: {
                 nom_client: user?.nom_utilisateur,
                 numero_telephone_client: user?.numero_telephone_utilisateur
             },
             items: cart,
-            total_ht: total,
-            total_ttc: total,
-            lieu_livraison: ville
+            total_ht: sousTotal,
+            lieu_livraison: ville,
+            identifiant_zone: selectedZone?.identifiant_zone || null,
+            latitude_client: coords?.[0] || null,
+            longitude_client: coords?.[1] || null
+        };
 
-        }
-        console.log("Commande validé", commande);
         try {
-            const response = await api.post("/commandes/creer/", commande, {
-                withCredentials: true
-            })
-
+            const response = await api.post("/commandes/creer/", commande, { withCredentials: true });
             if (response.status === 200 || response.status === 201) {
-                clearCart()
-                sessionStorage.setItem("identifiant_commande", response.data.reference_commande)
-                localStorage.removeItem("africart_cart")
-                navigate("/confirmation")
-            }
-        }
-        catch (error: any) {
-            if (error.response) {
-                const status = error.response.status;
+                console.log(response.data);
 
-                if (status === 400) {
-                    setAlert({ message: "Erreur de saisie.", type: "error" });
-                } else if (status === 500) {
-                    setAlert({ message: "Erreur survenue au serveur.", type: "error" });
-                } else if (status === 401) {
-                    setAlert({ message: "Accès non autorisé.", type: "error" });
-                } else {
-                    setAlert({ message: "Erreur inconnue.", type: "error" });
-                }
+                clearCart();
+                sessionStorage.setItem("identifiant_commande", response.data.reference_commande);
+                localStorage.removeItem("africart_cart");
+                navigate("/confirmation");
             }
+        } catch (error) {
+            setAlert({ message: "Erreur lors de la validation.", type: "error" });
+        } finally {
+            setLoading(false);
         }
-        finally {
-            setLoading(false)
-        }
+    };
 
+    // Afficher le skeleton pendant le chargement des zones
+    if (isLoadingZones) {
+        return <CheckoutSkeleton />;
     }
 
-    useEffect(() => {
-
-        console.log(cart);
-
-    }, [cart])
-
-
     return (
-        <>
-            {/* Page Checkout */}
-            <section className="page active" id="checkout-page">
-                <div className="container checkout-page">
-                    <h1 className="section-title">Finaliser votre commande</h1>
-                    <div className="checkout-container">
-                        <div className="checkout-form">
-                            <h3 className="mb-3">Informations de livraison</h3>
-                            <div className="form-section">
-                                <div className="form-group">
-                                    <label>Nom complet</label>
-                                    <div className="input-with-icon">
-                                        <span className="input-icon"><i className="fas fa-user" /></span>
-                                        <input
-                                            type="text"
-                                            className="form-control"
-                                            id="fullName"
-                                            placeholder="Votre nom complet"
-                                            value={user?.nom_utilisateur}
-                                            disabled
-                                        />
-                                    </div>
-                                </div>
-                                <div className="form-row">
-                                    <div className="form-group">
-                                        <label>Email</label>
-                                        <div className="input-with-icon">
-                                            <span className="input-icon"><i className="fas fa-envelope" /></span>
-                                            <input
-                                                type="email"
-                                                className="form-control"
-                                                id="email"
-                                                placeholder="votre@email.com"
-                                                value={user?.email_utilisateur}
-                                                disabled
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="form-group">
-                                        <label>Téléphone</label>
-                                        <div className="input-with-icon">
-                                            <span className="input-icon"><i className="fas fa-phone" /></span>
-                                            <input
-                                                type="tel"
-                                                className="form-control"
-                                                id="phone"
-                                                placeholder="+225 XX XX XX XX"
-                                                value={user?.numero_telephone_utilisateur || ""}
-                                                disabled
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="form-row">
-                                    <div className="form-group">
-                                        <label>Lieu de Livraison</label>
-                                        <input
-                                            type="text"
-                                            className="form-control"
-                                            id="city"
-                                            placeholder="Votre ville"
-                                            onChange={(e) => setVille(e.target.value)}
-                                            value={ville}
-                                            required
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                            <h3 className="mt-4 mb-3">Méthode de paiement</h3>
-                            <div className="payment-methods" role="radiogroup" aria-label="Méthodes de paiement">
-                                {/* <label className="payment-option selected" data-method="mobile" tabIndex={0}>
-                                    <div className="payment-icon">
-                                        <i className="fas fa-mobile-alt" />
-                                    </div>
-                                    <div>
-                                        <div className="option-title">Mobile Money</div>
-                                        <div className="option-desc">
-                                            Orange Money, MTN Money, Moov Money
-                                        </div>
-                                    </div>
+        <section className="page active" id="checkout-page">
+            <div className="container checkout-page">
+                <h1 className="section-title">Finaliser votre commande</h1>
+                <div className="checkout-container">
+                    <div className="checkout-form">
+                        <h3 className="mb-3">Informations de livraison</h3>
+                        <div className="form-section">
+                            {/* ... (Nom et Email restent inchangés) ... */}
 
-                                </label> */}
-                                {/* <label className="payment-option" data-method="card" tabIndex={0}>
-                                    <input type="radio" name="paymentMethod" className="visually-hidden" />
-                                    <div className="payment-icon">
-                                        <i className="fas fa-credit-card" />
-                                    </div>
-                                    <div>
-                                        <div className="option-title">Carte bancaire</div>
-                                        <div className="option-desc">Visa, Mastercard</div>
-                                    </div>
-                                    <div className="payment-check" aria-hidden="true"><i className="fas fa-check" /></div>
-                                </label> */}
-                                {/* <label className="payment-option" data-method="wave" tabIndex={0}>
-                                    <input type="radio" name="paymentMethod" className="visually-hidden" />
-                                    <div className="payment-icon">
-                                        <i className="fas fa-wave-square" />
-                                    </div>
-                                    <div>
-                                        <div className="option-title">Wave</div>
-                                        <div className="option-desc">
-                                            Paiement via l'application Wave
-                                        </div>
-                                    </div>
-                                    <div className="payment-check" aria-hidden="true"><i className="fas fa-check" /></div>
-                                </label> */}
-                                <label className="payment-option disabled" data-method="delivery" aria-disabled="true">
-                                    {/* <input type="radio" name="paymentMethod" className="visually-hidden" /> */}
-                                    <div className="payment-icon">
-                                        <i className="fas fa-truck" />
-                                    </div>
-                                    <div>
-                                        <div className="option-title">Paiement à la livraison</div>
-                                        <div className="option-desc">
-                                            Payez quand vous recevez votre commande,
-                                        </div>
-                                        <div className="option-desc">
-                                            + 2000 FCFA hors Yamoussoukro
-                                        </div>
-                                    </div>
-                                    <div className="payment-check" aria-hidden="true"><i className="fas fa-check" /></div>
-                                </label>
-                            </div>
-                            {/* <div className="form-group mt-4">
-                                <label>Notes pour la livraison (optionnel)</label>
-                                <textarea
-                                    className="form-control"
-                                    id="deliveryNotes"
-                                    rows={3}
-                                    placeholder="Instructions spéciales pour la livraison..."
-                                    defaultValue={""}
+                            <div className="form-group mb-4">
+                                <label className="mb-2">Localisez votre position de livraison</label>
+                                <MapDelivery
+                                    zones={zones}
+                                    onLocationSelected={(zone, latlng) => {
+                                        setSelectedZone(zone);
+                                        setCoords(latlng);
+                                        // On ne déclenche le reverse geocoding que si le clic vient de la carte
+                                        if (!isFetchingAddress) reverseGeocode(latlng[0], latlng[1]);
+                                    }}
                                 />
-                            </div> */}
+                                {selectedZone && (
+                                    <small className="text-success">
+                                        Zone détectée : <strong>{selectedZone.nom_zone}</strong> (Frais : {selectedZone.frais_livraison} FCFA)
+                                    </small>
+                                )}
+                            </div>
+
+                            <div className="form-group">
+                                <label>Lieu de livraison</label>
+                                <div style={{ display: 'flex', gap: 8, alignItems: 'center', position: 'relative' }}>
+                                    <input
+                                        disabled
+                                        type="text"
+                                        className="form-control"
+                                        placeholder="Ex: Riviera Palmeraie, Rue Ministre"
+                                        onChange={e => {
+                                            setVille(e.target.value);
+                                            setShowSuggestions(true);
+                                        }}
+                                        value={ville}
+                                        required
+                                        autoComplete="address-line1"
+                                        style={{ flex: 1 }}
+                                        onFocus={() => ville && suggestions.length > 0 && setShowSuggestions(true)}
+                                        onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                                    />
+
+                                    {showSuggestions && suggestions.length > 0 && (
+                                        <ul style={{
+                                            position: 'absolute',
+                                            top: '100%',
+                                            left: 0,
+                                            right: 0,
+                                            zIndex: 10,
+                                            background: '#fff',
+                                            border: '1px solid #ddd',
+                                            borderTop: 'none',
+                                            maxHeight: 200,
+                                            overflowY: 'auto',
+                                            margin: 0,
+                                            padding: 0,
+                                            listStyle: 'none',
+                                        }}>
+                                            {suggestions.map((s, idx) => (
+                                                <li
+                                                    key={s.place_id || idx}
+                                                    style={{ padding: 8, cursor: 'pointer', borderBottom: '1px solid #eee' }}
+                                                    onMouseDown={() => {
+                                                        setVille(s.display_name);
+                                                        setCoords([parseFloat(s.lat), parseFloat(s.lon)]);
+                                                        setShowSuggestions(false);
+                                                    }}
+                                                >
+                                                    {s.display_name}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </div>
+                            </div>
                         </div>
-                        <div className="order-summary">
-                            <h3 className="mb-3">Récapitulatif de commande</h3>
-                            <div id="orderSummaryItems">
-                                {
-                                    cart && cart.length > 0 && cart.map((article) => (
-                                        <div className="summary-item" key={article.identifiant_produit}>
-                                            <span>{article.nom_produit}</span>
-                                            <span>{article.prix_unitaire_produit} X {article.quantite_produit}</span>
-                                        </div>
-                                    ))
-                                }
 
-                            </div>
-                            <div className="summary-item summary-total">
-                                <span>Total</span>
-                                <span id="orderTotal">{(total).toLocaleString()} FCFA</span>
-                            </div>
-                            {
-                                cart.length === 0 ? (
-                                    <button className="btn btn-primary btn-large mt-4" id="placeOrder" disabled>
-                                        Passer la commande
-                                    </button>
-                                ) : (
-                                    <>
-                                        {
-                                            loading ? (
-                                                <button className="btn btn-primary btn-large mt-4" id="placeOrder" disabled>
-                                                    Passer la commande
-                                                </button>
-                                            ) : (<button className="btn btn-primary btn-large mt-4" onClick={validezCommande} id="placeOrder">
-                                                Passer la commande
-                                            </button>)
-                                        }
-
-                                    </>
-                                )
-                            }
-
-                            <p
-                                className="mt-3 text-center"
-                                style={{ fontSize: 12, color: "#777" }}
-                            >
-                                En passant votre commande, vous acceptez nos{" "}
-                                <a href="#" className="text-primary">
-                                    conditions générales
-                                </a>
-                            </p>
+                        {/* Section Paiement à la livraison */}
+                        <div className="payment-methods mt-4">
+                            <label className="payment-option selected">
+                                <div className="payment-icon"><i className="fas fa-truck" /></div>
+                                <div>
+                                    <div className="option-title">Paiement à la livraison</div>
+                                    <div className="option-desc">Payez {totalTTC.toLocaleString()} FCFA à la réception.</div>
+                                </div>
+                            </label>
                         </div>
                     </div>
-                </div>
-                {
-                    alert && (
-                        <Alert message={alert.message} type={alert.type} onClose={() => setAlert(null)} duration={6000} />
-                    )
-                }
-            </section>
-        </>
 
-    )
-}
+                    <div className="order-summary">
+                        <h3 className="mb-3">Récapitulatif</h3>
+                        <div id="orderSummaryItems">
+                            {cart.map((article) => (
+                                <div className="summary-item" key={article.identifiant_produit}>
+                                    <span>{article.nom_produit}</span>
+                                    <span>{article.prix_unitaire_produit} x {article.quantite_produit}</span>
+                                </div>
+                            ))}
+                            <div className="summary-item mt-2 pt-2 border-top">
+                                <span>Frais de livraison</span>
+                                <span>{fraisLivraison.toLocaleString()} FCFA</span>
+                            </div>
+                        </div>
+                        <div className="summary-item summary-total">
+                            <span>Total à payer</span>
+                            <span id="orderTotal">{totalTTC.toLocaleString()} FCFA</span>
+                        </div>
+                        <button
+                            className="btn btn-primary btn-large mt-4"
+                            onClick={validezCommande}
+                            disabled={loading || cart.length === 0}
+                        >
+                            {loading ? "Traitement..." : "Passer la commande"}
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {alert && <Alert message={alert.message} type={alert.type} onClose={() => setAlert(null)} />}
+        </section>
+    );
+};
