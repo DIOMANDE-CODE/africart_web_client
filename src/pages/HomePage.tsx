@@ -76,10 +76,10 @@ export const HomePage = () => {
                             <div className="hero-text">
                                 <span className="hero-badge">Africart : Mon marché en ligne </span>
                                 <h1 className="hero-title">
-                                    L'expérience du marché public réinventée
+                                    Le marché public en ligne
                                 </h1>
                                 <p className="hero-description">
-                                    Découvrez notre plateforme e-commerce qui vous permet de faire votre marché depuis vous.
+                                    Découvrez notre plateforme e-commerce qui vous permet de faire votre marché depuis chez vous.
                                 </p>
                                 {
                                     !user && (
@@ -128,7 +128,7 @@ export const HomePage = () => {
                     <div className="container">
                         <div className="products-header">
                             <Link to="/products" className="view-all">
-                                Voir tout <i className="fas fa-arrow-right" />
+                                Voir plus <i className="fas fa-arrow-right" />
                             </Link>
                         </div>
 

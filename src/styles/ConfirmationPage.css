@@ -99,6 +99,16 @@
 .email-row { display:flex; gap: var(--space-sm); align-items:center; margin-top: 6px; }
 .email-row .form-control { padding: 0.5rem 0.75rem; border-radius: 8px; border: 1px solid var(--neutral-200); }
 
+@media (max-width: 576px) {
+  .confirmation-card {
+    padding: 1.5rem;
+  }
+
+  .action-row {
+    flex-direction: column;
+  }
+}
+
 /* Tracking emphasis */
 .tracking-number { font-size: 1.2rem; letter-spacing: 0.6px; background: linear-gradient(90deg, rgba(99,102,241,0.06), rgba(99,102,241,0.02)); padding: 0.5rem 0.8rem; border-radius: 8px; display:inline-block; }
 .copy-btn { margin-left: 8px; }

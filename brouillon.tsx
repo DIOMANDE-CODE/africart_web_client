@@ -156,6 +156,7 @@ export const AccountPage = () => {
                                             <img
                                                 src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1099&q=80"
                                                 alt="Montre intelligente FitPro 5"
+                                                loading="lazy"
                                             />
                                         </div>
                                         <div className="product-info">
@@ -195,6 +196,7 @@ export const AccountPage = () => {
                                             <img
                                                 src="https://images.unsplash.com/photo-1553062407-98eeb64c6a62?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1074&q=80"
                                                 alt="Sac à dos élégant en cuir"
+                                                loading="lazy"
                                             />
                                         </div>
                                         <div className="product-info">

@@ -26,7 +26,8 @@ export const ProductsPage = () => {
     const [currentBanner, setCurrentBanner] = useState(0);
     const [category, setCategory] = useState<Category[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(true); // chargement initial / après filtre
+    const [isLoadingMore, setIsLoadingMore] = useState(false); // chargement des pages suivantes
 
     const [offset, setOffset] = useState(0)
     const [next, setNext] = useState(null)
@@ -76,7 +77,7 @@ export const ProductsPage = () => {
     }
 
     // Fonction pour recuperer les produits
-    const fetchProducts = async (customOffset = offset, replace = false) => {
+    const fetchProducts = async (customOffset = offset, replace = false, isLoadMore = false) => {
         try {
             const response = await api.get("/produits/list/", {
                 params: {
@@ -125,9 +126,13 @@ export const ProductsPage = () => {
                 }
             }
         } finally {
-            setLoading(false);
-            // Lorsque fetch terminé, désactiver le flag d'animation si actif
-            try { setIsFiltering(false); } catch (e) { }
+            // Fin de chargement : différencier chargement initial et "load more"
+            if (isLoadMore) {
+                setIsLoadingMore(false);
+            } else {
+                setLoading(false);
+            }
+            setIsFiltering(false);
         }
     }
 
@@ -143,7 +148,9 @@ export const ProductsPage = () => {
         setOffset(0);
         setNext(null);
         setIsFiltering(true);
-        fetchProducts(0, true);
+        setLoading(true);
+        setIsLoadingMore(false);
+        fetchProducts(0, true, false);
     }, [categorieParams, triParams, search]);
 
     useEffect(() => {
@@ -155,12 +162,14 @@ export const ProductsPage = () => {
     useEffect(() => {
         const observer = new IntersectionObserver(
             (entries) => {
-                if (entries[0].isIntersecting && next && !loading) {
-                    setLoading(true);
-                    fetchProducts(offset).finally(() => setLoading(false));
+                const first = entries[0];
+                if (first.isIntersecting && next && !isLoadingMore && !loading) {
+                    // Précharger la page suivante avant d'atteindre le bas
+                    setIsLoadingMore(true);
+                    fetchProducts(offset, false, true);
                 }
             },
-            { threshold: 0.5 }
+            { threshold: 0.5, rootMargin: '200px 0px' }
         );
 
         const sentinel = sentinelRef.current;
@@ -168,9 +177,10 @@ export const ProductsPage = () => {
         return () => {
             if (sentinel) observer.unobserve(sentinel);
         };
-    }, [next, offset, loading]);
+    }, [next, offset, loading, isLoadingMore]);
 
-    if (loading) {
+    if (loading && products.length === 0) {
+        // Skeleton uniquement pour le tout premier chargement / changement de filtre
         return <ProductSkeletonGrid count={12} />;
     }
 
@@ -204,7 +214,7 @@ export const ProductsPage = () => {
                                 key={idx}
                                 className={`products-hero-banner${idx === currentBanner ? " active animated" : ""}`}
                             >
-                                <img src={img} alt={`Bannière ${idx + 1}`} />
+                                <img src={img} alt={`Bannière ${idx + 1}`} loading="lazy" />
                             </div>
                         ))}
                     </div>
@@ -328,6 +338,7 @@ export const ProductsPage = () => {
                                                 <img
                                                     src={p.thumbnail || ''}
                                                     alt={p.nom_produit}
+                                                    loading="lazy"
                                                 />
                                                 <div className="product-badges">
                                                     {/* <span className="badge badge-secondary">
@@ -389,7 +400,7 @@ export const ProductsPage = () => {
                     </div>
                     <div ref={sentinelRef} />
                     {
-                        loading && (
+                        isLoadingMore && (
                             <div style={{ textAlign: 'center', padding: '20px' }}>
                                 <SmallLoader />
                             </div>

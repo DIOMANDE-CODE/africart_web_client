@@ -69,7 +69,7 @@ export const CartSidebar: React.FC<Props> = ({ open, onClose }) => {
                             cart.map((item) => (
                                 <div className="cart-item" key={item.identifiant_produit}>
                                     <div className="cart-item-image">
-                                        <img src={item.thumbnail} alt={item.nom_produit} />
+                                        <img src={item.thumbnail} alt={item.nom_produit} loading="lazy" />
                                     </div>
                                     <div className="cart-item-details">
                                         <div className="cart-item-title">{item.nom_produit}</div>

@@ -169,6 +169,7 @@ export const DetailProductPage = () => {
                                     src={selectedImage || detailProduct?.image_produit}
                                     alt={detailProduct?.nom_produit}
                                     id="mainProductImage"
+                                        loading="lazy"
                                 />
                             </div>
                             <div className="thumbnails">
@@ -180,6 +181,7 @@ export const DetailProductPage = () => {
                                     <img
                                         src={detailProduct?.thumbnail}
                                         alt={detailProduct?.nom_produit}
+                                            loading="lazy"
                                     />
                                 </div>
                                 <div
@@ -190,6 +192,7 @@ export const DetailProductPage = () => {
                                     <img
                                         src={detailProduct?.thumbnail_2}
                                         alt={detailProduct?.nom_produit}
+                                            loading="lazy"
                                     />
                                 </div>
                                 <div
@@ -200,6 +203,7 @@ export const DetailProductPage = () => {
                                     <img
                                         src={detailProduct?.thumbnail_3}
                                         alt={detailProduct?.nom_produit}
+                                            loading="lazy"
                                     />
                                 </div>
                             </div>

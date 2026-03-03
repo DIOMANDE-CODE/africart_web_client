@@ -98,6 +98,29 @@
 /* Mobile handling: order summary fixed at bottom for quick access */
 @media (max-width: 880px) {
   .checkout-container { grid-template-columns: 1fr; }
+  .order-summary {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-top: 1px solid var(--neutral-200);
+    border-radius: 16px 16px 0 0;
+    padding: 1rem;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+    z-index: 100;
+  }
+
+  .checkout-form {
+    margin-bottom: 150px; /* Space for fixed summary */
+  }
+}
+
+@media (max-width: 576px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
   .form-row { grid-template-columns: 1fr; gap: var(--space-md); }
   .btn.btn-primary.btn-large { width: 100%; }
 }

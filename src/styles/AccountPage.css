@@ -98,6 +98,35 @@
 
 /* Responsive form rows: two columns on desktop, stacked on mobile */
 .form-row {
+
+@media (max-width: 992px) {
+  .account-container {
+    grid-template-columns: 200px 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .account-container {
+    grid-template-columns: 1fr;
+  }
+
+  .account-sidebar {
+    position: static;
+    width: 100%;
+    margin-bottom: var(--space-lg);
+    display: flex;
+    overflow-x: auto;
+  }
+
+  .account-nav {
+    flex-direction: row;
+    width: 100%;
+  }
+
+  .account-nav a {
+    white-space: nowrap;
+  }
+}
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: var(--space-md);

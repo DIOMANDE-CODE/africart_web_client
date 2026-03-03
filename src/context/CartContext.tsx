@@ -16,7 +16,15 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [cart, setCart] = useState<Product[]>(() => {
     const stored = localStorage.getItem("africart_cart");
-    return stored ? JSON.parse(stored) : [];
+    if (!stored) return [];
+    try {
+      const parsed = JSON.parse(stored);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+      console.error("Invalid cart data in localStorage, resetting africart_cart.", error);
+      localStorage.removeItem("africart_cart");
+      return [];
+    }
   });
 
   // Sauvegarde le panier à chaque modification

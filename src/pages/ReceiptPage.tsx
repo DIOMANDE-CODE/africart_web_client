@@ -150,9 +150,6 @@ export const ReceiptPage = () => {
                     {/* Header */}
                     <div className="receipt-header">
                         <div className="receipt-logo">
-                            <div className="logo-icon">
-                                <i className="fas fa-shopping-bag"></i>
-                            </div>
                             <div className="logo-text">
                                 <h1>Afri<span>Cart</span></h1>
                             </div>
