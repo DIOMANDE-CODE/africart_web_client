@@ -5,6 +5,7 @@ import api from "../services/api";
 import { Alert } from "../components/Alert";
 import { formatDate } from "../utils/formatDate";
 import { ConfirmationSkeleton } from "../skeletons";
+import { useAuth } from "../context/AuthContext";
 
 export const ConfirmationPage = () => {
     const [copied, setCopied] = useState(false);
@@ -18,6 +19,7 @@ export const ConfirmationPage = () => {
     const [lieuLivraison, setLieuLivraison] = useState("")
     const [nomClient, setNomClient] = useState("")
     const [numero, setNumero] = useState("")
+    const { loadingSession } = useAuth();
     const [loading, setLoading] = useState(true)
 
     const handleCopy = async () => {
@@ -71,8 +73,11 @@ export const ConfirmationPage = () => {
     }
 
     useEffect(() => {
+        if (loadingSession) return; // wait for session check
         detail_commande()
-    }, [reference_commande])
+    }, [reference_commande, loadingSession])
+
+    if (loadingSession) return <ConfirmationSkeleton />;
 
     if (reference_commande === null || !identifiantCommande) {
         return (

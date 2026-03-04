@@ -10,7 +10,7 @@ export const Header = () => {
     const [mobileOpen, setMobileOpen] = useState(false);
     const [cartOpen, setCartOpen] = useState(false);
     const { cart } = useCart();
-    const { user } = useAuth();
+    const { user, loadingSession } = useAuth();
     const location : string = useLocation().pathname
 
     useEffect(() => {
@@ -75,25 +75,22 @@ export const Header = () => {
                     }
 
                     {
-                        !user && (
+                        // During session check render a small spinner to avoid layout shift
+                        loadingSession ? (
+                            <div style={{ width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }} aria-hidden="true">
+                                <span className="small-loader-spinner" style={{ width: 28, height: 28, borderWidth: 3 }} />
+                            </div>
+                        ) : !user ? (
                             <Link to="/login" aria-label="Se connecter">
                                 <button className="action-btn">
                                     <i className="fas fa-sign-in-alt" />
                                 </button>
                             </Link>
-                        )
-                    }
-
-
-                    {
-                        user && (
+                        ) : (
                             <NavLink to="/account">
                                 <div className="user-avatar">
-                                    {user?.nom_utilisateur &&
-
-                                        user?.nom_utilisateur?.slice(0, 2).toUpperCase() || "?"}
+                                    {user?.nom_utilisateur && user?.nom_utilisateur?.slice(0, 2).toUpperCase() || "?"}
                                 </div>
-
                             </NavLink>
                         )
                     }

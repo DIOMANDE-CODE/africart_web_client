@@ -6,6 +6,7 @@ import { Alert } from "../components/Alert";
 import api from "../services/api";
 import { useNavigate } from "react-router-dom";
 import MapDelivery from "../components/MapDelivery";
+import L from 'leaflet';
 import CheckoutSkeleton from "../skeletons/CheckoutSkeleton";
 
 interface Zone {
@@ -110,7 +111,7 @@ export const CheckoutPage = () => {
         }, 0);
     }, [cart]);
 
-    const fraisLivraison = selectedZone ? Number(selectedZone.frais_livraison) : 300;
+    const fraisLivraison = selectedZone ? Number(selectedZone.frais_livraison) : 2000;
     const totalTTC = sousTotal + fraisLivraison;
 
     // 6. Fonction pour récupérer l'adresse textuelle depuis les coordonnées
@@ -133,6 +134,11 @@ export const CheckoutPage = () => {
     const validezCommande = async () => {
         if (!ville.trim()) {
             setAlert({ message: "Veuillez préciser le lieu de livraison", type: "error" });
+            return;
+        }
+
+        if (!coords) {
+            setAlert({ message: "Veuillez sélectionner un point de livraison sur la carte.", type: "error" });
             return;
         }
 
@@ -167,7 +173,7 @@ export const CheckoutPage = () => {
         }
     };
 
-    // Afficher le skeleton pendant le chargement des zones
+    // Afficher le skeleton pendant la vérification de session ou le chargement des zones
     if (isLoadingZones) {
         return <CheckoutSkeleton />;
     }
@@ -184,15 +190,23 @@ export const CheckoutPage = () => {
 
                             <div className="form-group mb-4">
                                 <label className="mb-2">Localisez votre position de livraison</label>
-                                <MapDelivery
-                                    zones={zones}
-                                    onLocationSelected={(zone, latlng) => {
-                                        setSelectedZone(zone);
-                                        setCoords(latlng);
-                                        // On ne déclenche le reverse geocoding que si le clic vient de la carte
-                                        if (!isFetchingAddress) reverseGeocode(latlng[0], latlng[1]);
-                                    }}
-                                />
+                                        <MapDelivery
+                                            zones={zones}
+                                            onLocationSelected={(zone, latlng) => {
+                                                setSelectedZone(zone);
+                                                setCoords(latlng);
+                                                // On ne déclenche le reverse geocoding que si le clic vient de la carte
+                                                if (!isFetchingAddress) reverseGeocode(latlng[0], latlng[1]);
+                                            }}
+                                        />
+                                        <div style={{ marginTop: 8 }}>
+                                            {!coords && (
+                                                <small className="text-error">Sélectionnez votre position sur la carte pour continuer.</small>
+                                            )}
+                                            {coords && !selectedZone && (
+                                                <small className="text-warning">Aucune zone de livraison spécifique trouvée pour ce point. Des frais par défaut peuvent s'appliquer.</small>
+                                            )}
+                                        </div>
                                 {selectedZone && (
                                     <small className="text-success">
                                         Zone détectée : <strong>{selectedZone.nom_zone}</strong> (Frais : {selectedZone.frais_livraison} FCFA)
@@ -204,7 +218,6 @@ export const CheckoutPage = () => {
                                 <label>Lieu de livraison</label>
                                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', position: 'relative' }}>
                                     <input
-                                        disabled
                                         type="text"
                                         className="form-control"
                                         placeholder="Ex: Riviera Palmeraie, Rue Ministre"
@@ -236,19 +249,27 @@ export const CheckoutPage = () => {
                                             padding: 0,
                                             listStyle: 'none',
                                         }}>
-                                            {suggestions.map((s, idx) => (
-                                                <li
-                                                    key={s.place_id || idx}
-                                                    style={{ padding: 8, cursor: 'pointer', borderBottom: '1px solid #eee' }}
-                                                    onMouseDown={() => {
-                                                        setVille(s.display_name);
-                                                        setCoords([parseFloat(s.lat), parseFloat(s.lon)]);
-                                                        setShowSuggestions(false);
-                                                    }}
-                                                >
-                                                    {s.display_name}
-                                                </li>
-                                            ))}
+                                                    {suggestions.map((s, idx) => (
+                                                        <li
+                                                            key={s.place_id || idx}
+                                                            style={{ padding: 8, cursor: 'pointer', borderBottom: '1px solid #eee' }}
+                                                            onMouseDown={() => {
+                                                                const lat = parseFloat(s.lat);
+                                                                const lon = parseFloat(s.lon);
+                                                                setVille(s.display_name);
+                                                                setCoords([lat, lon]);
+                                                                // Déterminer la zone correspondante côté parent
+                                                                const matched = zones.find(z => {
+                                                                    const dist = L.latLng(lat, lon).distanceTo(L.latLng(z.latitude, z.longitude));
+                                                                    return dist <= z.rayon_metres;
+                                                                }) || null;
+                                                                setSelectedZone(matched);
+                                                                setShowSuggestions(false);
+                                                            }}
+                                                        >
+                                                            {s.display_name}
+                                                        </li>
+                                                    ))}
                                         </ul>
                                     )}
                                 </div>
@@ -288,7 +309,7 @@ export const CheckoutPage = () => {
                         <button
                             className="btn btn-primary btn-large mt-4"
                             onClick={validezCommande}
-                            disabled={loading || cart.length === 0}
+                            disabled={loading || cart.length === 0 || !coords}
                         >
                             {loading ? "Traitement..." : "Passer la commande"}
                         </button>

@@ -9,10 +9,11 @@ import { validateEmail } from "../utils/emailChecking";
 import { validationNumeroCI } from "../utils/validerNumero";
 import AccountSkeleton from "../skeletons/AccountSkeleton";
 import { useNavigate } from "react-router-dom";
+import { AccountSidebar } from "../components/AccountSidebar";
 
 export const AccountPage = () => {
     const [activeTab, setActiveTab] = useState("profile");
-    const { logout, user, setUser } = useAuth()
+    const { user, setUser, logout, loadingSession } = useAuth()
     const [alert, setAlert] = useState<{ message: string; type: "success" | "error" } | null>(null);
     const [commandes, setCommandes] = useState<Commande[]>([])
     const [ancienMdp, setAncienMdp] = useState("")
@@ -48,10 +49,7 @@ export const AccountPage = () => {
         }
     }, [nomUser, emailUser, numUser, user])
 
-    const handleTabClick = (e: React.MouseEvent<HTMLAnchorElement>, tab: string) => {
-        e.preventDefault(); // empêche le scroll vers #
-        setActiveTab(tab);
-    };
+
 
     const voirRecu = (id: string) => {
         navigate(`/receipt/${id}`);
@@ -108,7 +106,7 @@ export const AccountPage = () => {
                 nom_utilisateur: nomUser,
                 email_utilisateur: emailUser,
                 numero_telephone_utilisateur: numUser,
-                role: 'client'
+                role: 'client',
             });
 
             if (response.status === 200) {
@@ -177,15 +175,33 @@ export const AccountPage = () => {
     }
 
     useEffect(() => {
-        ListeCommandeClient()
-    }, [user])
+        // Only fetch orders when we know the session has been resolved and user exists
+        if (loadingSession) return;
+        if (!user) return;
+        ListeCommandeClient();
+    }, [user, loadingSession])
 
-    // Afficher le skeleton tant que les données se chargent
-    if (isLoading) {
+    // Afficher le skeleton tant que la vérification de session ou le chargement profil/commandes est en cours
+    if (loadingSession || isLoading) {
         return (
             <section className="page active" id="account-page">
                 <div className="container account-page">
                     <AccountSkeleton />
+                </div>
+            </section>
+        );
+    }
+
+    // Si la session est résolue et qu'il n'y a pas d'utilisateur connecté, inviter à se connecter
+    if (!user) {
+        return (
+            <section className="page active" id="account-page">
+                <div className="container account-page">
+                    <div className="not-logged">
+                        <h2>Vous n'êtes pas connecté</h2>
+                        <p>Veuillez vous connecter pour accéder à votre compte et à vos commandes.</p>
+                        <a href="/login" className="btn btn-primary">Se connecter</a>
+                    </div>
                 </div>
             </section>
         );
@@ -199,37 +215,7 @@ export const AccountPage = () => {
                 <h1 className="section-title">Mon Compte</h1>
                 <div className="account-container">
                     {/* Sidebar */}
-                    <div className="account-sidebar">
-                        <ul className="account-nav">
-                            <li>
-                                <a
-                                    href="#profile"
-                                    className={activeTab === "profile" ? "active" : ""}
-                                    onClick={(e) => handleTabClick(e, "profile")}
-                                >
-                                    Mon profil
-                                </a>
-                            </li>
-                            <li>
-                                <a
-                                    href="#orders"
-                                    className={activeTab === "orders" ? "active" : ""}
-                                    onClick={(e) => handleTabClick(e, "orders")}
-                                >
-                                    Mes commandes
-                                </a>
-                            </li>
-                            {/* <li>
-                                <a
-                                    href="#wishlist"
-                                    className={activeTab === "wishlist" ? "active" : ""}
-                                    onClick={(e) => handleTabClick(e, "wishlist")}
-                                >
-                                    Mes favoris
-                                </a>
-                            </li> */}
-                        </ul>
-                    </div>
+                    <AccountSidebar  />
 
                     {/* Contenu */}
                     <div className="account-content">

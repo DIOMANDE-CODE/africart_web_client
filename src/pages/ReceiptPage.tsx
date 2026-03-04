@@ -10,7 +10,7 @@ import "../styles/ReceiptPage.css";
 export const ReceiptPage = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { user, loadingSession } = useAuth();
     const [commande, setCommande] = useState<RecuCommande | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -26,11 +26,11 @@ export const ReceiptPage = () => {
 
             try {
                 const response = await api.get(`/commandes/detail/${id}/`);
-                
+
                 if (response.status === 200) {
                     console.log(response.data.data);
                     setCommande(response.data.data);
-                    
+
                 }
             } catch (error: any) {
                 console.error("Erreur lors de la récupération de la commande:", error);
@@ -39,6 +39,14 @@ export const ReceiptPage = () => {
                 setIsLoading(false);
             }
         };
+
+        // Wait for session check to finish before attempting to fetch or decide access
+        if (loadingSession) return;
+        if (!user) {
+            setError("Veuillez vous connecter pour voir ce reçu.");
+            setIsLoading(false);
+            return;
+        }
 
         fetchCommande();
     }, [id, user]);
@@ -99,7 +107,8 @@ export const ReceiptPage = () => {
         return { displayEtat, statusClass };
     };
 
-    if (isLoading) {
+    // Show skeleton while verifying session or loading data
+    if (loadingSession || isLoading) {
         return <ReceiptSkeleton />;
     }
 
@@ -129,7 +138,7 @@ export const ReceiptPage = () => {
             <div className="receipt-container">
                 {/* Actions Toolbar */}
                 <div className="receipt-toolbar no-print">
-                    <button className="btn-back" onClick={() => navigate('/account')}>
+                    <button className="btn-back" onClick={() => navigate('/commandes')}>
                         <i className="fas fa-arrow-left"></i>
                         Retour
                     </button>

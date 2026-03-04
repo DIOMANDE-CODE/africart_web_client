@@ -1,4 +1,5 @@
 import { useState } from "react";
+import "../styles/Footer.css";
 
 export const Footer = () => {
     const [email, setEmail] = useState("");
@@ -71,19 +72,44 @@ export const Footer = () => {
                         </div>
                     </div>
 
-                    {/* <div>
-                        <h3>Boutique</h3>
-                        <br />
+                    <div className="footer-column">
+                        <h3 className="footer-title">Boutique</h3>
                         <ul className="footer-links">
-                            <li><a href="/products"><i className="fas fa-chevron-right" /> Produits</a></li>
-                            <li><a href="/account"><i className="fas fa-chevron-right" /> Mon compte</a></li>
+                            <li><a href="/products"><i className="fas fa-chevron-right" /> Tous les produits</a></li>
+                            <li><a href="/products?tri_par=nouveautes"><i className="fas fa-chevron-right" /> Nouveautés</a></li>
+                            <li><a href="/products?categorie=Fruits%20et%20l%C3%A9gumes"><i className="fas fa-chevron-right" /> Fruits & légumes</a></li>
+                            <li><a href="/products?categorie=C%C3%A9r%C3%A9ales"><i className="fas fa-chevron-right" /> Céréales</a></li>
                         </ul>
-                    </div> */}
+                    </div>
+
+                    <div className="footer-column">
+                        <h3 className="footer-title">Aide</h3>
+                        <ul className="footer-links">
+                            <li><a href="#faq"><i className="fas fa-chevron-right" /> FAQ</a></li>
+                            <li><a href="#"><i className="fas fa-chevron-right" /> Suivi de commande</a></li>
+                            <li><a href="#"><i className="fas fa-chevron-right" /> Livraison & zones desservies</a></li>
+                            <li><a href="#"><i className="fas fa-chevron-right" /> Retours & remboursements</a></li>
+                        </ul>
+                    </div>
+
+                    <div className="footer-column">
+                        <h3 className="footer-title">AfriCart</h3>
+                        <ul className="footer-links">
+                            <li><a href="#about"><i className="fas fa-chevron-right" /> À propos</a></li>
+                            <li><a href="#"><i className="fas fa-chevron-right" /> Devenir partenaire</a></li>
+                            <li><a href="#"><i className="fas fa-chevron-right" /> Conditions d'utilisation</a></li>
+                            <li><a href="#"><i className="fas fa-chevron-right" /> Politique de confidentialité</a></li>
+                        </ul>
+                    </div>
                 </div>
 
                 <div className="footer-bottom">
-                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                        <p>© {year} AfriCart. Tous droits réservés. | Développé par Diomande Droh Martial</p>
+                    <p>© {year} AfriCart. Tous droits réservés. | Développé par Diomande Droh Martial</p>
+                    <div className="footer-payments">
+                        <span>Paiements sécurisés :</span>
+                        <i className="fab fa-cc-visa" aria-hidden="true" />
+                        <i className="fab fa-cc-mastercard" aria-hidden="true" />
+                        <i className="fas fa-mobile-alt" aria-hidden="true" />
                     </div>
                 </div>
             </div>

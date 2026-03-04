@@ -12,7 +12,7 @@ import { Alert } from "../components/Alert";
 import { ProductDetailSkeleton } from "../skeletons";
 
 export const DetailProductPage = () => {
-    const { user } = useAuth();
+    const { user, loadingSession } = useAuth();
     // ...existing code...
     // State pour la note moyenne
     const [averageRating, setAverageRating] = useState<number | null>(null);
@@ -148,7 +148,7 @@ export const DetailProductPage = () => {
         }
     }, [detailProduct]);
 
-    if (loading) {
+    if (loadingSession || loading) {
         return (
             <section className="page active" id="product-detail-page">
                 <ProductDetailSkeleton />
@@ -237,7 +237,7 @@ export const DetailProductPage = () => {
                             <div className="buy-panel" aria-hidden="false">
                                 <div className="buy-left">
                                     <div className="buy-price">{detailProduct?.prix_unitaire_produit} FCFA</div>
-                                    <div className="buy-sub">Livraison rapide • Retours 14j</div>
+                                    <div className="buy-sub">Livraison rapide • 4 jours</div>
                                 </div>
                                 <div className="buy-actions">
                                     {

@@ -1,0 +1,184 @@
+/* Footer styles for AfriCart */
+
+.main-footer {
+  background: #111827;
+  color: #e5e7eb;
+  padding: 3rem 0 1.5rem;
+  font-size: 0.95rem;
+}
+
+.main-footer .container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 2.5rem;
+}
+
+.footer-newsletter {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.footer-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #f9fafb;
+  margin-bottom: 0.75rem;
+}
+
+.footer-column {
+  min-width: 0;
+}
+
+.footer-links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.footer-links a {
+  color: #9ca3af;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  transition: color 0.2s ease, transform 0.15s ease;
+}
+
+.footer-links a i {
+  font-size: 0.75rem;
+}
+
+.footer-links a:hover {
+  color: #f9fafb;
+  transform: translateX(2px);
+}
+
+.newsletter-form {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.newsletter-form .input-field {
+  flex: 1;
+  padding: 0.7rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.15);
+}
+
+.newsletter-form .btn {
+  border-radius: 999px;
+  padding-inline: 1rem;
+}
+
+.contact-info p {
+  margin: 0.15rem 0;
+  color: #9ca3af;
+}
+
+.contact-info i {
+  margin-right: 0.5rem;
+}
+
+.social-links {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.social-link {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(156,163,175,0.4);
+  color: #e5e7eb;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease, border-color 0.2s ease;
+}
+
+.social-link:hover {
+  background: #f9fafb;
+  color: #111827;
+  border-color: transparent;
+  transform: translateY(-1px);
+}
+
+.footer-bottom {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(55, 65, 81, 0.8);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  color: #9ca3af;
+}
+
+.footer-payments {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+}
+
+.footer-payments i {
+  font-size: 1.2rem;
+}
+
+.small-note {
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+
+@media (max-width: 960px) {
+  .footer-grid {
+    grid-template-columns: 1.7fr 1fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .footer-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .footer-newsletter {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 576px) {
+  .main-footer {
+    padding: 2.5rem 0 1.25rem;
+  }
+
+  .footer-grid {
+    grid-template-columns: 1fr;
+    gap: 1.75rem;
+  }
+
+  .footer-bottom {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .newsletter-form {
+    flex-direction: column;
+  }
+
+  .newsletter-form .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

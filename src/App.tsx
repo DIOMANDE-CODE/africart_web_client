@@ -9,6 +9,7 @@ import { DetailProductPage } from './pages/DetailProductPage'
 import { CheckoutPage } from './pages/CheckoutPage'
 import { ConfirmationPage } from './pages/ConfirmationPage'
 import { ReceiptPage } from './pages/ReceiptPage'
+import CommandesPage from './pages/CommandesPage'
 import { CartProvider } from './context/CartContext'
 import { Login } from './pages/authentification/Login'
 import { Register } from './pages/authentification/Register'
@@ -82,6 +83,14 @@ function App() {
               element={
                 <PrivateRoute>
                   <ReceiptPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/commandes"
+              element={
+                <PrivateRoute>
+                  <CommandesPage />
                 </PrivateRoute>
               }
             />

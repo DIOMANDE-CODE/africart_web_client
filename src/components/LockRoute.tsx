@@ -11,7 +11,7 @@ export const PrivateRoute = ({ children }: RouteProps) => {
   if (loadingSession) {
     return 
   }
-  return user ? children : <Navigate to="/login" replace />;
+  return user ? children : <Navigate to="/" replace />;
 };
 
 // Route publique : accessible seulement si NON connecté

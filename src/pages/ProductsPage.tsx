@@ -6,6 +6,7 @@ import api from '../services/api';
 import { SmallLoader } from '../components/Loader';
 import { ProductRating } from '../components/ProductRating';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import { ProductSkeletonGrid } from '../skeletons';
 import SearchInput from '../components/SearchInput';
 import { isNewArrival } from '../utils/isNewArrival';
@@ -13,6 +14,7 @@ import { isNewArrival } from '../utils/isNewArrival';
 export const ProductsPage = () => {
 
     const { addToCart, cart } = useCart();
+    const { user, loadingSession } = useAuth();
 
     // Paramètre de filtrage
     const [categorieParams, setCategoryParams] = useState("")
@@ -179,7 +181,7 @@ export const ProductsPage = () => {
         };
     }, [next, offset, loading, isLoadingMore]);
 
-    if (loading && products.length === 0) {
+    if (loadingSession || (loading && products.length === 0)) {
         // Skeleton uniquement pour le tout premier chargement / changement de filtre
         return <ProductSkeletonGrid count={12} />;
     }
@@ -280,7 +282,7 @@ export const ProductsPage = () => {
                                     }}
                                 >
                                     <option value="">Aucun tri</option>
-                                    <option value="populaire" disabled>Populaires</option>
+                                    {/* <option value="populaire" disabled>Populaires</option> */}
                                     <option value="prix_croissant">Prix croissant</option>
                                     <option value="prix_decroissant">Prix décroissant</option>
                                     <option value="nouveautes">Nouveautés</option>

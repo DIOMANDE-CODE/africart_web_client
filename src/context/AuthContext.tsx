@@ -31,12 +31,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     try {
       await api.get("/authentification/logout/");
-      setUser(null);
-      localStorage.removeItem("africart_cart")
-      sessionStorage.removeItem("identifiant_commande");
-      navigate("/");
     } catch (error: any) {
+      // Log server error but still perform client-side cleanup and redirect
       console.error("Erreur lors de la déconnexion:", error.message || "Erreur survenue");
+    } finally {
+      setUser(null);
+      localStorage.removeItem("africart_cart");
+      sessionStorage.removeItem("identifiant_commande");
+      try {
+        navigate("/", { replace: true });
+      } catch (e) {
+        // navigation may fail in non-router contexts; ignore safely
+      }
     }
   };
 

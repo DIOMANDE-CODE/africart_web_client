@@ -12,10 +12,14 @@ build/
 .vite/
 out/
 
-### Environment files (local secrets) ###
+### Environment files (Secrets locaux) ###
+# On ignore tous les fichiers d'environnement pour éviter les fuites de clés API
 .env
-.env.*.local
 .env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
 
 ### Logs ###
 logs/
@@ -34,6 +38,11 @@ coverage/
 .DS_Store
 Thumbs.db
 Desktop.ini
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
 
 ### TypeScript ###
 *.tsbuildinfo
@@ -45,18 +54,6 @@ node_modules/.cache/
 ### Dependency bundlers / lock caches ###
 *.tgz
 
-### Optional: local IDE/editor folders ###
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.swp
-
-### Misc ###
-# Local uploads / runtime folders (uncomment if present)
-# uploads/
-# temp/
-
-.env
+### Misc / Brouillons ###
 brouillon.tsx
-
+temp/

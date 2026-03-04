@@ -13,7 +13,7 @@ export const HomePage = () => {
     // Creation des useState
     const [category, setCategory] = useState<Category[]>([]);
     const [loading, setLoading] = useState(true);
-    const { user, } = useAuth();
+    const { user, loadingSession } = useAuth();
     const [alert, setAlert] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
     // Fonction pour recuperer les categories
@@ -64,8 +64,6 @@ export const HomePage = () => {
         fetchCategories()
     }, [])
 
-
-
     return (
         <>
             {/* Page d'accueil */}
@@ -76,7 +74,7 @@ export const HomePage = () => {
                             <div className="hero-text">
                                 <span className="hero-badge">Africart : Mon marché en ligne </span>
                                 <h1 className="hero-title">
-                                    Le marché public en ligne
+                                    Votre marché public en ligne
                                 </h1>
                                 <p className="hero-description">
                                     Découvrez notre plateforme e-commerce qui vous permet de faire votre marché depuis chez vous.
@@ -132,7 +130,7 @@ export const HomePage = () => {
                             </Link>
                         </div>
 
-                        {loading ? (
+                        {(loadingSession || loading) ? (
                             <>
                                 <CategoryCarouselSkeleton />
                                 <CategoryCarouselSkeleton />
