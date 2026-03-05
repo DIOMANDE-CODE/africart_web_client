@@ -30,6 +30,8 @@ export const ProductsPage = () => {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true); // chargement initial / après filtre
     const [isLoadingMore, setIsLoadingMore] = useState(false); // chargement des pages suivantes
+    // track whether this is the very first initial load
+    const [initialLoad, setInitialLoad] = useState(true);
 
     const [offset, setOffset] = useState(0)
     const [next, setNext] = useState(null)
@@ -135,6 +137,8 @@ export const ProductsPage = () => {
                 setLoading(false);
             }
             setIsFiltering(false);
+            // mark initial load as completed after first fetch finishes
+            if (initialLoad) setInitialLoad(false);
         }
     }
 
@@ -181,8 +185,8 @@ export const ProductsPage = () => {
         };
     }, [next, offset, loading, isLoadingMore]);
 
-    if (loadingSession || (loading && products.length === 0)) {
-        // Skeleton uniquement pour le tout premier chargement / changement de filtre
+    // Only show the skeleton during the very first page load.
+    if (loadingSession || (loading && products.length === 0 && initialLoad)) {
         return <ProductSkeletonGrid count={12} />;
     }
 
@@ -226,9 +230,11 @@ export const ProductsPage = () => {
                     {/* Barre de recherche améliorée */}
                     <div className="products-search-section mb-5">
                         <div className="search-wrapper">
-                            <div className="search-input-group">
-                                <SearchInput setSearch={setSearch} />
-                            </div>
+                            <form className="search-form" onSubmit={(e) => e.preventDefault()} aria-label="Recherche produits">
+                                <div className="search-input-group">
+                                    <SearchInput setSearch={setSearch} />
+                                </div>
+                            </form>
                         </div>
                     </div>
 

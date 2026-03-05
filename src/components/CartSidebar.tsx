@@ -33,7 +33,6 @@ export const CartSidebar: React.FC<Props> = ({ open, onClose }) => {
         }
     }
 
-
     useEffect(() => {
         if (open) document.body.style.overflow = "hidden";
         else document.body.style.overflow = "";

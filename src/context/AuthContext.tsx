@@ -16,53 +16,10 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [loadingSession, setLoadingSession] = useState(true); // Initialisé à true pour le check initial
   const navigate = useNavigate();
-  const [loadingSession, setLoadingSession] = useState(true);
 
-  // Vérifie la session au montage
-  useEffect(() => {
-    ( async () => {
-        await checkSession();
-        setLoadingSession(false);
-    })()
-  }, []);
-
-  // Déconnexion
-  const logout = async () => {
-    try {
-      await api.get("/authentification/logout/");
-    } catch (error: any) {
-      // Log server error but still perform client-side cleanup and redirect
-      console.error("Erreur lors de la déconnexion:", error.message || "Erreur survenue");
-    } finally {
-      setUser(null);
-      localStorage.removeItem("africart_cart");
-      sessionStorage.removeItem("identifiant_commande");
-      try {
-        navigate("/", { replace: true });
-      } catch (e) {
-        // navigation may fail in non-router contexts; ignore safely
-      }
-    }
-  };
-
-  // Vérification de session via cookie HttpOnly
-  const checkSession = async () => {
-    try {
-      const response = await api.get("/authentification/check_session/", {
-        withCredentials: true
-      });
-      if (response.data.authenticated) {
-        await fetchUserInfo(); // Récupère les infos utilisateur si authentifié
-      } else {
-        setUser(null);
-      }
-    } catch {
-      setUser(null);
-    }
-  };
-
-  // Récupération des infos utilisateur
+  // 1. Récupération des infos utilisateur
   const fetchUserInfo = async () => {
     try {
       const response = await api.get("/utilisateurs/info_utilisateur/");
@@ -76,6 +33,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // 2. Vérification de session via cookie HttpOnly
+  const checkSession = async () => {
+    setLoadingSession(true);
+    try {
+      const response = await api.get("/authentification/check_session/", {
+        withCredentials: true,
+      });
+      if (response.data.authenticated) {
+        await fetchUserInfo();
+      } else {
+        setUser(null);
+      }
+    } catch (error) {
+      setUser(null);
+    } finally {
+      setLoadingSession(false);
+    }
+  };
+
+  // 3. Fonction Logout
+  const logout = async () => {
+    try {
+      await api.post("/authentification/logout/", {}, { withCredentials: true });
+    } catch (error) {
+      console.error("Erreur lors de la déconnexion", error);
+    } finally {
+      // Nettoyage local quoi qu'il arrive
+      setUser(null);
+      localStorage.removeItem("africart_cart");
+      sessionStorage.removeItem("identifiant_commande");
+      
+      // Dispatch d'événements personnalisés
+      window.dispatchEvent(new CustomEvent('africart:clear_cart'));
+      
+      navigate("/", { replace: true });
+    }
+  };
+
+  // Vérifie la session au montage du composant
+  useEffect(() => {
+    checkSession();
+  }, []);
+
   return (
     <AuthContext.Provider value={{ user, setUser, logout, checkSession, fetchUserInfo, loadingSession }}>
       {children}
@@ -83,7 +83,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Hook personnalisé
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) throw new Error("useAuth doit être utilisé dans AuthProvider");

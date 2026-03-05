@@ -32,6 +32,20 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem("africart_cart", JSON.stringify(cart));
   }, [cart]);
 
+  // Écoute des événements de vidage du panier (ex: logout depuis AuthContext)
+  useEffect(() => {
+    const handler = () => {
+      setCart([]);
+      try {
+        localStorage.removeItem("africart_cart");
+      } catch (e) {
+        /* ignore */
+      }
+    };
+    window.addEventListener('africart:clear_cart', handler as EventListener);
+    return () => window.removeEventListener('africart:clear_cart', handler as EventListener);
+  }, []);
+
   const addToCart = (product: Product) => {
     setCart((prev) => {
       const exists = prev.find((p) => p.identifiant_produit === product.identifiant_produit);

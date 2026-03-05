@@ -28,6 +28,17 @@ export const AccountPage = () => {
     const [isLoadingPassword, setIsLoadingPassword] = useState(false)
     const navigate = useNavigate();
 
+
+    // Live password criteria
+    const isLengthValid = nouveauMdp.length >= 6;
+    const hasUpper = /[A-Z]/.test(nouveauMdp);
+    const hasLower = /[a-z]/.test(nouveauMdp);
+    const hasSymbol = /[^A-Za-z0-9]/.test(nouveauMdp);
+    const hasDigit = /[0-9]/.test(nouveauMdp);
+    const isPasswordValidLive = isLengthValid && hasUpper && hasLower && hasSymbol && hasDigit;
+    // Enable change password when criteria satisfied, confirmation matches and old password provided
+    const isChangePasswordEnabled = isPasswordValidLive && nouveauMdp === confirmMdp && ancienMdp.trim() !== "";
+
     // Initialiser les champs avec les données de l'utilisateur
     useEffect(() => {
         if (user) {
@@ -131,7 +142,7 @@ export const AccountPage = () => {
 
     const handleUpdatePassword = async () => {
         if (!ancienMdp.trim() || !nouveauMdp.trim() || !confirmMdp.trim()) {
-            setAlert({ message: "Veuillez remplir tous les champs.", type: "error" });
+            setAlert({ message: "Veuillez remplir tous les champs de mot de passe.", type: "error" });
             return;
         }
 
@@ -215,7 +226,7 @@ export const AccountPage = () => {
                 <h1 className="section-title">Mon Compte</h1>
                 <div className="account-container">
                     {/* Sidebar */}
-                    <AccountSidebar  />
+                    <AccountSidebar />
 
                     {/* Contenu */}
                     <div className="account-content">
@@ -298,6 +309,8 @@ export const AccountPage = () => {
                                                 id="newPassword"
                                                 value={nouveauMdp}
                                                 onChange={(e) => setNouveauMdp(e.target.value)}
+                                                aria-invalid={nouveauMdp.length > 0 && !isPasswordValidLive}
+
                                             />
                                         </div>
                                     </div>
@@ -309,13 +322,15 @@ export const AccountPage = () => {
                                             id="confirmPassword"
                                             value={confirmMdp}
                                             onChange={(e) => setConfirmMdp(e.target.value)}
+                                            aria-invalid={confirmMdp.length > 0 && !isPasswordValidLive}
                                         />
                                     </div>
                                     <button
                                         className="btn btn-primary mt-4"
                                         onClick={handleUpdatePassword}
-                                        disabled={isLoadingPassword}
-                                        style={{ opacity: isLoadingPassword ? 0.5 : 1, cursor: isLoadingPassword ? 'not-allowed' : 'pointer' }}
+                                        disabled={!isChangePasswordEnabled || isLoadingPassword}
+                                        aria-disabled={!isChangePasswordEnabled || isLoadingPassword}
+                                        style={{ opacity: (!isChangePasswordEnabled || isLoadingPassword) ? 0.5 : 1, cursor: (!isChangePasswordEnabled || isLoadingPassword) ? 'not-allowed' : 'pointer' }}
                                     >
                                         {isLoadingPassword ? (
                                             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
@@ -326,6 +341,16 @@ export const AccountPage = () => {
                                             "Changer de mot de passe"
                                         )}
                                     </button>
+                                    <div id="password-criteria" className="password-criteria">
+                                        <p className="criteria-title">Le mot de passe doit contenir :</p>
+                                        <ul>
+                                            <li className={isLengthValid ? "valid" : "invalid"}>Au moins 6 caractères</li>
+                                            <li className={hasUpper ? "valid" : "invalid"}>Une lettre majuscule</li>
+                                            <li className={hasLower ? "valid" : "invalid"}>Une lettre minuscule</li>
+                                            <li className={hasDigit ? "valid" : "invalid"}>Au moins un chiffre</li>
+                                            <li className={hasSymbol ? "valid" : "invalid"}>Au moins un symbole</li>
+                                        </ul>
+                                    </div>
                                 </div>
                                 <button className="btn mt-4" style={{ backgroundColor: "#d32f2f", color: "white" }} onClick={logout}>
                                     Se deconnecter
@@ -333,109 +358,7 @@ export const AccountPage = () => {
                             </div>
                         )}
 
-                        {activeTab === "orders" && (
-                            <div className="account-tab active" id="orders-tab">
-                                {/* contenu commandes */}
-                                <h3>Historique et états des commandes</h3>
-                                {/* <p className="mt-2">
-                                    Consultez l'état de vos commandes précédentes
-                                </p> */}
-                                <div className="order-history mt-4">
-                                    {/* Commande 1 */}
-
-                                    {
-                                        commandes && commandes.map((comm) => {
-                                            const rawEtat = (comm.etat_commande || '').toString();
-                                            const normalizedEtat = rawEtat
-                                                .toLowerCase()
-                                                .normalize('NFD')
-                                                .replace(/\p{Diacritic}/gu, '')
-                                                .replace(/[^a-z0-9_]+/gi, '_');
-
-                                            let displayEtat = rawEtat;
-                                            switch (normalizedEtat) {
-                                                case 'en_cours':
-                                                    displayEtat = 'En cours';
-                                                    break;
-                                                case 'valide':
-                                                    displayEtat = 'En Livraison...';
-                                                    break;
-                                                case 'livre':
-                                                    displayEtat = 'Livrée';
-                                                    break;
-                                                case 'annule':
-                                                case 'annulee':
-                                                case 'annulee_':
-                                                    displayEtat = 'Annulée';
-                                                    break;
-                                                default:
-                                                    displayEtat = rawEtat;
-                                            }
-
-                                            return (
-                                                <div className="order-card" key={comm.identifiant_commande}>
-                                                    <div className="order-header">
-                                                        <div>
-                                                            <h5>{comm.identifiant_commande}</h5>
-                                                            <small style={{ fontWeight: "bold" }}>Date et Heure : </small>
-                                                            <small>{formatDate(comm.date_commande)}</small>
-
-                                                        </div>
-                                                        {
-                                                            comm.etat_commande && (
-                                                                <div className={`order-status status-${normalizedEtat}`}>
-                                                                    {displayEtat}
-                                                                </div>
-                                                            )
-                                                        }
-
-                                                    </div>
-                                                    <div className="order-items">
-                                                        {
-                                                            comm.details_commandes?.map((detail) => (
-                                                                <div className="order-item-img" key={detail.produit.thumbnail}>
-                                                                    <img
-                                                                        src={detail.produit.thumbnail}
-                                                                        alt={detail.produit.nom_produit}
-                                                                        title={detail.produit.nom_produit}
-                                                                        loading="lazy"
-                                                                    />
-                                                                    <div>
-                                                                        x {detail.quantite}
-                                                                    </div>
-                                                                </div>
-                                                            ))
-                                                        }
-
-
-                                                    </div>
-                                                    <div className="order-footer">
-                                                        <div className="summary-item">
-                                                            <span>Total</span>
-                                                            <strong>
-                                                                {(
-                                                                    parseFloat(comm.total_ht) +
-                                                                    (comm.frais_livraison_appliques ? parseFloat(comm.frais_livraison_appliques) : 0)
-                                                                ).toLocaleString()} FCFA
-                                                            </strong>
-                                                        </div>
-                                                        <button
-                                                            className="btn-receipt"
-                                                            onClick={() => voirRecu(comm.identifiant_commande)}
-                                                        >
-                                                            <i className="fas fa-receipt"></i>
-                                                            Voir le reçu
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            )
-                                        })
-                                    }
-
-                                </div>
-                            </div>
-                        )}
-
+                        
 
                         {activeTab === "wishlist" && (
                             <div className="account-tab active">

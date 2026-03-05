@@ -31,15 +31,52 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  max-width: 410px;
-  margin: 0 auto;
-  background: rgba(255,255,255,0.88);
-  border-radius: 24px;
-  box-shadow: 0 8px 32px 0 rgba(30,127,67,0.13), 0 1.5px 8px rgba(0,0,0,0.10);
-  padding: 24px 18px 18px 18px;
+  width: 50vw; /* take half the viewport width on large screens */
+  max-width: 1200px; /* cap at a comfortable maximum */
+  min-width: 360px;
+  margin: 0 auto; /* center */
+  background: rgba(255,255,255,0.95);
+  border-radius: 16px;
+  box-shadow: 0 14px 48px rgba(30,127,67,0.10), 0 4px 18px rgba(0,0,0,0.06);
+  padding: 32px 28px 28px 28px;
   backdrop-filter: blur(8px);
-  border: 1.5px solid var(--primary-100, #b6e2c6);
+  border: 1px solid rgba(30,127,67,0.06);
+}
+
+/* Reduce overall height to avoid page scrolling: internal scroll for long content */
+.register-form-container {
+  max-height: 80vh;
+  overflow: hidden;
+}
+.register-form-content {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  max-height: calc(80vh - 48px);
+  overflow-y: auto;
+  padding-right: 6px; /* room for scrollbar */
+}
+
+/* Compact inputs/buttons to reduce vertical space */
+.login-input {
+  padding: 6px 10px;
+  font-size: 0.95rem;
+}
+.login-btn {
+  padding: 8px 0;
+  font-size: 1rem;
+}
+.login-visual .login-logo {
+  width: 88px;
+  height: 88px;
+}
+
+/* If content still too long on small viewports, allow the whole container to scroll */
+@media (max-width: 520px) {
+  .register-form-container { max-height: 88vh; }
+  .register-form-content { max-height: calc(88vh - 56px); }
 }
 .register-form-content {
   width: 100%;
@@ -49,6 +86,7 @@
 }
 @media (max-width: 900px) {
   .register-form-container {
+    width: 98vw; /* full width on smaller screens */
     max-width: 98vw;
     border-radius: 14px;
     padding: 12px 4vw 10px 4vw;
@@ -68,6 +106,58 @@
   height: 110px;
   margin-bottom: 8px;
   border-radius: 18px;
+}
+
+/* Page header (title + subtitle) */
+.page-header {
+  text-align: center;
+  width: 100%;
+  margin-bottom: 8px;
+}
+.page-title {
+  margin: 0 0 6px 0;
+  font-size: 1.45rem;
+  color: var(--primary-700, #114b2f);
+  font-weight: 800;
+}
+.page-subtitle {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--muted, #475569);
+  opacity: 0.95;
+}
+
+/* Animated textual logo */
+.logo-text {
+  font-size: 3rem;
+  font-weight: 900;
+  color: var(--primary-800, #0b5132);
+  letter-spacing: -0.4px;
+  display: inline-block;
+  transform-origin: center;
+  will-change: transform, color;
+  animation: logoFloat 2600ms ease-in-out infinite;
+}
+.logo-text span {
+  color: var(--accent, #f59e0b);
+  margin-left: 4px;
+  display: inline-block;
+  transform-origin: center;
+  transition: transform 220ms ease, color 220ms ease;
+}
+.logo-text:hover { transform: translateY(-4px) scale(1.02); }
+.logo-text:hover span { transform: translateY(-2px) scale(1.03); }
+
+@keyframes logoFloat {
+  0% { transform: translateY(0) scale(1); }
+  40% { transform: translateY(-3px) scale(1.02); }
+  70% { transform: translateY(0) scale(1); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-text { animation: none !important; transform: none !important; }
+  .logo-text:hover { transform: none !important; }
 }
 .register-split-image img {
   width: 100%;
@@ -149,3 +239,244 @@
   color: var(--secondary-500, #f78f1e);
 }
 
+/* Password criteria live helper */
+.password-criteria {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  width: 100%;
+  font-size: 0.95rem;
+  color: var(--text-muted, #4a5568);
+  padding: 10px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.7), rgba(250,255,250,0.65));
+  border: 1px solid rgba(30,127,67,0.06);
+}
+.criteria-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  transition: background 180ms ease, color 180ms ease, transform 160ms ease;
+  background: transparent;
+}
+.criteria-item .criteria-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-weight: 700;
+  line-height: 1;
+  font-size: 0.85rem;
+  color: var(--muted, #6b7280);
+  background: rgba(15,23,42,0.04);
+  transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+.criteria-item.ok {
+  color: var(--primary-700, #114b2f);
+  background: linear-gradient(90deg, rgba(79,209,139,0.08), rgba(79,209,139,0.03));
+}
+.criteria-dot.criteria-ok {
+  background: var(--primary-400, #4fd18b);
+  color: #fff;
+  box-shadow: 0 6px 14px rgba(79,209,139,0.18);
+  transform: translateY(-1px) scale(1.02);
+}
+.criteria-dot.criteria-bad {
+  background: rgba(239,68,68,0.06);
+  color: var(--danger, #ef4444);
+  box-shadow: none;
+}
+
+/* Explicit styles for non-validated criteria */
+.criteria-item:not(.ok) {
+  color: var(--muted, #6b7280);
+  background: rgba(15,23,42,0.02);
+}
+.criteria-item:not(.ok) .criteria-dot {
+  background: rgba(0,0,0,0.03);
+  color: var(--muted, #6b7280);
+}
+
+/* Visual affordance when a criterion becomes valid */
+.criteria-item.ok {
+  transform: translateY(-3px);
+}
+@keyframes criteriaPop {
+  0% { transform: scale(0.85); opacity: 0; }
+  60% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.criteria-dot.criteria-ok {
+  animation: criteriaPop 280ms cubic-bezier(0.2,0.9,0.2,1);
+}
+
+/* Accessible focus for keyboard users */
+.criteria-item:focus {
+  outline: 2px dashed rgba(79,209,139,0.18);
+  outline-offset: 4px;
+}
+
+/* two-column layout on wider screens */
+@media (min-width: 720px) {
+  .password-criteria { grid-template-columns: 1fr 1fr; gap: 10px; }
+}
+
+/* Small screens: slightly smaller dots and text */
+@media (max-width: 480px) {
+  .password-criteria { font-size: 0.9rem; padding: 8px; }
+  .criteria-item .criteria-dot { width: 20px; height: 20px; font-size: 0.85rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .criteria-item, .criteria-dot { transition: none !important; }
+}
+
+/* Styles for UL list variant (valid / invalid) */
+.password-criteria ul {
+  list-style: none;
+  margin: 6px 0 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.password-criteria ul li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  transition: background 180ms ease, color 180ms ease, transform 160ms ease;
+  background: transparent;
+}
+.password-criteria ul li::before {
+  content: '•';
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  font-weight: 700;
+  line-height: 1;
+  font-size: 0.85rem;
+  color: #fff;
+  background: rgba(15,23,42,0.05);
+}
+
+/* Valid */
+.password-criteria ul li.valid {
+  color: var(--primary-700, #114b2f);
+  background: linear-gradient(90deg, rgba(79,209,139,0.08), rgba(79,209,139,0.03));
+}
+.password-criteria ul li.valid::before {
+  content: '✓';
+  background: var(--primary-400, #4fd18b);
+  box-shadow: 0 6px 14px rgba(79,209,139,0.18);
+  transform: translateY(-1px) scale(1.03);
+}
+
+/* Invalid */
+.password-criteria ul li.invalid {
+  color: var(--danger, #b91c1c);
+  background: rgba(239,68,68,0.04);
+}
+.password-criteria ul li.invalid::before {
+  content: '✖';
+  background: rgba(239,68,68,0.12);
+  color: var(--danger, #b91c1c);
+}
+
+@media (max-width: 480px) {
+  .password-criteria ul li::before { width: 14px; height: 14px; font-size: 0.75rem; }
+  .criteria-item .criteria-dot { width: 16px; height: 16px; font-size: 0.75rem; }
+}
+
+/* Always show criteria as a single column (one item per line) */
+.password-criteria ul { grid-template-columns: 1fr; }
+
+.password-criteria ul li { width: 100%; }
+
+/* Minimal design override for password criteria (keeps things small and clear) */
+.password-criteria {
+  margin-top: 8px;
+  font-size: 0.92rem;
+  color: var(--muted, #475569);
+  padding: 12px; /* internal spacing so content doesn't stick */
+  background: rgba(255,255,255,0.02);
+  border-radius: 8px;
+}
+.password-criteria .criteria-title {
+  margin: 0 0 6px 0;
+  font-weight: 600;
+  color: var(--muted-strong, #334155);
+  font-size: 0.95rem;
+}
+.password-criteria ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.password-criteria ul li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px; /* increase vertical and horizontal spacing */
+  border-radius: 6px;
+}
+.password-criteria ul li::before {
+  content: '';
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--dot-off, #e2e8f0);
+}
+.password-criteria ul li.valid {
+  color: var(--success, #065f46);
+}
+.password-criteria ul li.valid::before {
+  content: '✓';
+  color: #fff;
+  background: var(--success, #10b981);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  width: 14px;
+  height: 14px;
+}
+.password-criteria ul li.invalid {
+  color: var(--muted, #64748b);
+}
+.password-criteria ul li.invalid::before {
+  background: var(--dot-off, #e2e8f0);
+}
+@media (max-width: 480px) {
+  .password-criteria { font-size: 0.88rem; }
+  .password-criteria ul li::before { width: 10px; height: 10px; font-size: 9px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .password-criteria *, .password-criteria::before { transition: none !important; }
+}
+
+/* Ensure title stays above the list: force vertical flow */
+.password-criteria {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch;
+}
+.password-criteria .criteria-title {
+  display: block;
+  width: 100%;
+  margin-bottom: 8px;
+}
+.password-criteria ul { width: 100%; }

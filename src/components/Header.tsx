@@ -11,7 +11,9 @@ export const Header = () => {
     const [cartOpen, setCartOpen] = useState(false);
     const { cart } = useCart();
     const { user, loadingSession } = useAuth();
-    const location : string = useLocation().pathname
+    const location: string = useLocation().pathname
+    const [sessionChecking, setSessionChecking] = useState(false);
+
 
     useEffect(() => {
         const handleEscape = (e: KeyboardEvent) => {
@@ -30,6 +32,18 @@ export const Header = () => {
 
         return () => window.removeEventListener("keydown", handleEscape);
     }, [mobileOpen, cartOpen]);
+
+    // Listen for session check start/end events to show a small spinner locally
+    useEffect(() => {
+        const start = () => setSessionChecking(true);
+        const end = () => setSessionChecking(false);
+        window.addEventListener('africart:session_check_start', start as EventListener);
+        window.addEventListener('africart:session_check_end', end as EventListener);
+        return () => {
+            window.removeEventListener('africart:session_check_start', start as EventListener);
+            window.removeEventListener('africart:session_check_end', end as EventListener);
+        };
+    }, []);
 
     const closeMobile = () => setMobileOpen(false);
 
@@ -75,24 +89,24 @@ export const Header = () => {
                     }
 
                     {
-                        // During session check render a small spinner to avoid layout shift
-                        loadingSession ? (
-                            <div style={{ width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }} aria-hidden="true">
-                                <span className="small-loader-spinner" style={{ width: 28, height: 28, borderWidth: 3 }} />
-                            </div>
-                        ) : !user ? (
-                            <Link to="/login" aria-label="Se connecter">
-                                <button className="action-btn">
-                                    <i className="fas fa-sign-in-alt" />
-                                </button>
-                            </Link>
-                        ) : (
-                            <NavLink to="/account">
-                                <div className="user-avatar">
-                                    {user?.nom_utilisateur && user?.nom_utilisateur?.slice(0, 2).toUpperCase() || "?"}
-                                </div>
-                            </NavLink>
-                        )
+                                        // During session check render a small spinner to avoid layout shift
+                                        (sessionChecking || loadingSession) ? (
+                                            <div style={{ width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }} aria-hidden="true">
+                                                <span className="small-loader-spinner" style={{ width: 28, height: 28, borderWidth: 3 }} />
+                                            </div>
+                                        ) : !user ? (
+                                            <Link to="/login" aria-label="Se connecter">
+                                                <button className="action-btn">
+                                                    <i className="fas fa-sign-in-alt" />
+                                                </button>
+                                            </Link>
+                                        ) : (
+                                            <NavLink to="/account">
+                                                <div className="user-avatar">
+                                                    {user?.nom_utilisateur && user?.nom_utilisateur?.slice(0, 2).toUpperCase() || "?"}
+                                                </div>
+                                            </NavLink>
+                                        )
                     }
 
                     <button

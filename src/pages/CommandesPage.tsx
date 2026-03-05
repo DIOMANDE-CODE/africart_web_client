@@ -81,83 +81,109 @@ const CommandesPage = () => {
         <section className="page active" id="account-page">
             <div className="container account-page">
 
-                <div className="account-content">
-                    <h1 className="section-title">Mes commandes</h1>
-                    <div className="account-container">
-                        {/* Sidebar */}
-                        <AccountSidebar />
-
-                        {/* Contenu */}
-                        <div className="order-history mt-4">
-                            {commandes && commandes.map((comm) => {
-                                const rawEtat = (comm.etat_commande || '').toString();
-                                const normalizedEtat = rawEtat
-                                    .toLowerCase()
-                                    .normalize('NFD')
-                                    .replace(/\p{Diacritic}/gu, '')
-                                    .replace(/[^a-z0-9_]+/gi, '_');
-
-                                let displayEtat = rawEtat;
-                                switch (normalizedEtat) {
-                                    case 'en_cours':
-                                        displayEtat = 'En cours';
-                                        break;
-                                    case 'valide':
-                                        displayEtat = 'En Livraison...';
-                                        break;
-                                    case 'livre':
-                                        displayEtat = 'Livrée';
-                                        break;
-                                    case 'annule':
-                                    case 'annulee':
-                                    case 'annulee_':
-                                        displayEtat = 'Annulée';
-                                        break;
-                                    default:
-                                        displayEtat = rawEtat;
-                                }
-
-                                return (
-                                    <div className="order-card" key={comm.identifiant_commande}>
+                {
+                    commandes.length === 0 ? (
+                        <div className="account-content">
+                            <h1 className="section-title">Mes commandes</h1>
+                            <div className="account-container">
+                                {/* Sidebar */}
+                                <AccountSidebar />
+                                {/* Contenu */}
+                                <div className="order-history mt-4">
+                                    <div className="order-card" >
                                         <div className="order-header">
                                             <div>
-                                                <h5>{comm.identifiant_commande}</h5>
-                                                <small style={{ fontWeight: "bold" }}>Date et Heure : </small>
-                                                <small>{formatDate(comm.date_commande)}</small>
+                                                <h5>Aucune commande</h5>
                                             </div>
-                                            {comm.etat_commande && (
-                                                <div className={`order-status status-${normalizedEtat}`}>
-                                                    {displayEtat}
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="order-items">
-                                            {comm.details_commandes?.map((detail) => (
-                                                <div className="order-item-img" key={detail.produit.thumbnail}>
-                                                    <img src={detail.produit.thumbnail} alt={detail.produit.nom_produit} loading="lazy" />
-                                                    <div> x {detail.quantite} </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                        <div className="order-footer">
-                                            <div className="summary-item">
-                                                <span>Total</span>
-                                                <strong>{(
-                                                    parseFloat(comm.total_ht) + (comm.frais_livraison_appliques ? parseFloat(comm.frais_livraison_appliques) : 0)
-                                                ).toLocaleString()} FCFA</strong>
-                                            </div>
-                                            <button className="btn-receipt" onClick={() => voirRecu(comm.identifiant_commande)}>
-                                                <i className="fas fa-receipt"></i> Voir le reçu
-                                            </button>
+
                                         </div>
                                     </div>
-                                );
-                            })}
-                        </div>
-                    </div>
+                                </div>
+                            </div>
 
-                    {alert && <Alert message={alert.message} type={alert.type} onClose={() => setAlert(null)} />}
-                </div>
+                        </div>
+                    ) : (
+                        <div className="account-content">
+                            <h1 className="section-title">Mes commandes</h1>
+                            <div className="account-container">
+                                {/* Sidebar */}
+                                <AccountSidebar />
+
+                                {/* Contenu */}
+                                <div className="order-history mt-4">
+                                    {commandes && commandes.map((comm) => {
+                                        const rawEtat = (comm.etat_commande || '').toString();
+                                        const normalizedEtat = rawEtat
+                                            .toLowerCase()
+                                            .normalize('NFD')
+                                            .replace(/\p{Diacritic}/gu, '')
+                                            .replace(/[^a-z0-9_]+/gi, '_');
+
+                                        let displayEtat = rawEtat;
+                                        switch (normalizedEtat) {
+                                            case 'en_cours':
+                                                displayEtat = 'En cours';
+                                                break;
+                                            case 'valide':
+                                                displayEtat = 'En Livraison...';
+                                                break;
+                                            case 'livre':
+                                                displayEtat = 'Livrée';
+                                                break;
+                                            case 'annule':
+                                            case 'annulee':
+                                            case 'annulee_':
+                                                displayEtat = 'Annulée';
+                                                break;
+                                            default:
+                                                displayEtat = rawEtat;
+                                        }
+
+                                        return (
+                                            <div className="order-card" key={comm.identifiant_commande}>
+                                                <div className="order-header">
+                                                    <div>
+                                                        <h5>{comm.identifiant_commande}</h5>
+                                                        <small style={{ fontWeight: "bold" }}>Date et Heure : </small>
+                                                        <small>{formatDate(comm.date_commande)}</small>
+                                                    </div>
+                                                    {comm.etat_commande && (
+                                                        <div className={`order-status status-${normalizedEtat}`}>
+                                                            {displayEtat}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="order-items">
+                                                    {comm.details_commandes?.map((detail) => (
+                                                        <div className="order-item-img" key={detail.produit.thumbnail}>
+                                                            <img src={detail.produit.thumbnail} alt={detail.produit.nom_produit} loading="lazy" />
+                                                            <div> x {detail.quantite} </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                <div className="order-footer">
+                                                    <div className="summary-item">
+                                                        <span>Total</span>
+                                                        <strong>{(
+                                                            parseFloat(comm.total_ht) + (comm.frais_livraison_appliques ? parseFloat(comm.frais_livraison_appliques) : 0)
+                                                        ).toLocaleString()} FCFA</strong>
+                                                    </div>
+                                                    <button className="btn-receipt" onClick={() => voirRecu(comm.identifiant_commande)}>
+                                                        <i className="fas fa-receipt"></i> Voir le reçu
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {alert && <Alert message={alert.message} type={alert.type} onClose={() => setAlert(null)} />}
+                        </div>
+                    )
+                }
+
+
             </div>
         </section>
     );
