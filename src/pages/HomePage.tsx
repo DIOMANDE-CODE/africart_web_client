@@ -80,7 +80,7 @@ export const HomePage = () => {
             }
 
             try {
-                const respPopular = await api.get('/recommandations/?type=best_sellers');
+                const respPopular = await api.get('/recommandations/?type=personnalise');
                 if (respPopular.status === 200 && respPopular.data?.data) {
                     const prods = respPopular.data.data.produits || [];
                     setRecommendedPopular(prods);
@@ -216,7 +216,7 @@ export const HomePage = () => {
                         {recommendedPopular && recommendedPopular.length > 0 ? (
                             <div className="recommendation-block mb-5 popular" >
                                 <div className="section-header">
-                                    <h3>PRODUITS POPULAIRES</h3>
+                                    <h3>{user ? `Recommandation pour ${user.nom_utilisateur}` : "Produits populaires"}</h3>
                                 </div>
                                     <button type="button" className="carousel-nav prev" onClick={() => scrollPopular('left')} aria-label="Précédent">‹</button>
                                     <div
