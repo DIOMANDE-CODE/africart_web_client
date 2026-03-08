@@ -1,13 +1,15 @@
 import "../styles/HomePage.css";
 import CategoryCarousel from "../components/CategoryCarousel";
 import { Link } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import api from "../services/api";
 import type { Category } from "../interfaces/Category";
+import type { Product } from "../interfaces/Product";
 import { useAuth } from "../context/AuthContext";
 import { Alert } from "../components/Alert";
-import { CategoryCarouselSkeleton } from "../skeletons";
+import { CategoryCarouselSkeleton, RecommendationSkeleton } from "../skeletons";
 import Chatbot from "../components/Chatbot";
+import type { ProductRecommended } from "../interfaces/ProductsRecommanded";
 
 export const HomePage = () => {
 
@@ -16,6 +18,8 @@ export const HomePage = () => {
     const [loading, setLoading] = useState(true);
     const { user, loadingSession } = useAuth();
     const [alert, setAlert] = useState<{ message: string; type: "success" | "error" } | null>(null);
+    const [recommendedPersonal, setRecommendedPersonal] = useState<Product[]>([]);
+    const [recommendedPopular, setRecommendedPopular] = useState<ProductRecommended[]>([]);
 
     // Fonction pour recuperer les categories
     const fetchCategories = async () => {
@@ -64,6 +68,69 @@ export const HomePage = () => {
     useEffect(() => {
         fetchCategories()
     }, [])
+
+    useEffect(() => {
+        const fetchRecommendations = async () => {
+            try {
+                // essaie endpoint personnalisé
+                const respPersonal = await api.get('/produits/recommendations/personal/');
+                if (respPersonal.status === 200 && respPersonal.data?.data) setRecommendedPersonal(respPersonal.data.data.produits || respPersonal.data.data || []);
+            } catch (e) {
+                // ignore si non disponible
+            }
+
+            try {
+                const respPopular = await api.get('/recommandations/?type=best_sellers');
+                if (respPopular.status === 200 && respPopular.data?.data) {
+                    const prods = respPopular.data.data.produits || [];
+                    setRecommendedPopular(prods);
+                }
+            } catch (e) {
+                // fallback: rien
+            }
+        };
+        fetchRecommendations();
+    }, []);
+
+    const popularRef = useRef<HTMLDivElement | null>(null);
+    const isPausedRef = useRef(false);
+    const autoScrollIntervalRef = useRef<number | null>(null);
+    const directionRef = useRef<'right' | 'left'>('right');
+
+    const scrollPopular = (dir: "left" | "right") => {
+        const el = popularRef.current;
+        if (!el) return;
+        const step = Math.round(el.clientWidth * 0.4) || 300;
+        el.scrollBy({ left: dir === "left" ? -step : step, behavior: "smooth" });
+    };
+
+    useEffect(() => {
+        if (!recommendedPopular || recommendedPopular.length === 0) return;
+        // start auto scroll
+        if (autoScrollIntervalRef.current) return;
+        autoScrollIntervalRef.current = window.setInterval(() => {
+            if (isPausedRef.current) return;
+            const el = popularRef.current;
+            if (!el) return;
+            const max = el.scrollWidth - el.clientWidth;
+            const atEnd = el.scrollLeft >= (max - 8);
+            const atStart = el.scrollLeft <= 8;
+            // flip direction if needed
+            if (directionRef.current === 'right' && atEnd) directionRef.current = 'left';
+            else if (directionRef.current === 'left' && atStart) directionRef.current = 'right';
+
+            // perform scroll step based on direction
+            const step = Math.max(160, Math.round(el.clientWidth * 0.6));
+            el.scrollBy({ left: directionRef.current === 'right' ? step : -step, behavior: 'smooth' });
+        }, 3500) as unknown as number;
+
+        return () => {
+            if (autoScrollIntervalRef.current) {
+                clearInterval(autoScrollIntervalRef.current as number);
+                autoScrollIntervalRef.current = null;
+            }
+        };
+    }, [recommendedPopular]);
 
     return (
         <>
@@ -121,6 +188,65 @@ export const HomePage = () => {
                         </div>
                     </div>
                 </div> */}
+
+                {/* Espace recommandations */}
+                <div className="recommendations-section">
+                    <div className="container">
+                        {recommendedPersonal && recommendedPersonal.length > 0 ? (
+                            <div className="recommendation-block mb-5">
+                                <div className="section-header">
+                                    <h3>Recommandés pour vous</h3>
+                                </div>
+                                <div className="recommendation-list">
+                                    {recommendedPersonal.map((p) => (
+                                        <div key={p.identifiant_produit} className="rec-card">
+                                            <img src={p.thumbnail} alt={p.nom_produit} />
+                                            <div className="rec-meta">
+                                                <div className="rec-title">{p.nom_produit}</div>
+                                                <div className="rec-price">{p.prix_unitaire_produit} FCFA</div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : (
+                            loading && <RecommendationSkeleton count={4} />
+                        )}
+
+                        {recommendedPopular && recommendedPopular.length > 0 ? (
+                            <div className="recommendation-block mb-5 popular" >
+                                <div className="section-header">
+                                    <h3>PRODUITS POPULAIRES</h3>
+                                </div>
+                                    <button type="button" className="carousel-nav prev" onClick={() => scrollPopular('left')} aria-label="Précédent">‹</button>
+                                    <div
+                                        className="recommendation-list"
+                                        ref={popularRef}
+                                        onMouseEnter={() => { isPausedRef.current = true; }}
+                                        onMouseLeave={() => { isPausedRef.current = false; }}
+                                    >
+                                        {recommendedPopular.map((p) => (
+                                            <article className="carousel-item" key={p.identifiant_produit} role="listitem">
+                                                <a href={`/products/detail/${p.identifiant_produit}`}>
+                                                    <div className="item-image">
+                                                        <img src={p.thumbnail} alt={p.nom_produit} loading="lazy" />
+                                                    </div>
+                                                    <div className="item-body">
+                                                        <h6 style={{color:"black"}}>{p.categorie}</h6>
+                                                        <div className="item-title">{p.nom_produit}</div>
+                                                        <div className="item-price">{p.prix} FCFA</div>
+                                                    </div>
+                                                </a>
+                                            </article>
+                                        ))}
+                                    </div>
+                                    <button type="button" className="carousel-nav next" onClick={() => scrollPopular('right')} aria-label="Suivant">›</button>
+                            </div>
+                        ) : (
+                            loading && <RecommendationSkeleton count={4} />
+                        )}
+                    </div>
+                </div>
 
                 {/* Produits par catégorie */}
                 <div className="products-section" id="products">

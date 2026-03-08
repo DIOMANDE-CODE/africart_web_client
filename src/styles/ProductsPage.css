@@ -829,6 +829,28 @@
     transition: color 0.3s var(--ease-out);
 }
 
+.recommendation-block { margin: 1rem 0; }
+.recommendation-list { display:flex; gap:12px; overflow-x:auto; padding:8px 0; }
+.rec-card { min-width:170px; background:#fff; border-radius:10px; box-shadow:var(--shadow-sm); padding:8px; display:flex; gap:8px; align-items:center; }
+.rec-card img{ width:60px; height:60px; object-fit:cover; border-radius:6px }
+.rec-meta{ display:flex; flex-direction:column }
+.rec-title{ font-weight:700; font-size:0.95rem }
+.rec-price{ color:var(--primary-500); font-weight:600 }
+
+/* Carousel behaviors */
+.recommendation-block { position: relative; padding: 1rem; border-radius: 12px; background: var(--gradient-primary); color: var(--neutral-50); }
+.recommendation-list { scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+.carousel-item { scroll-snap-align: start; flex: 0 0 auto; margin-right: 12px; min-width: 260px; max-width: 320px; background: #fff; border-radius: 12px; overflow: hidden; }
+.recommendation-list::-webkit-scrollbar { height: 8px; }
+.recommendation-list::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 6px; }
+.carousel-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; border-radius: 50%; border: none; background: rgba(255,255,255,0.95); box-shadow: 0 4px 12px rgba(0,0,0,0.12); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+.carousel-nav.prev { left: 8px; }
+.carousel-nav.next { right: 8px; }
+.carousel-nav:hover { transform: translateY(-50%) scale(1.03); }
+
+/* Recommendation skeleton visuals */
+.skeleton-card .skeleton-image { height: 180px; background: linear-gradient(90deg,#e6eef2,#f8fafc); animation: shimmer 1.2s infinite; background-size: 400px 100%; }
+.recommendation-skeleton .skeleton-line { background: linear-gradient(90deg,#e6eef2,#f8fafc); animation: shimmer 1.2s infinite; border-radius:8px; margin:8px 0; }
 .product-card:hover .product-title {
     color: var(--primary-600);
 }

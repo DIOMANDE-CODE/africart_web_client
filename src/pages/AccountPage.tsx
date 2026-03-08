@@ -156,7 +156,7 @@ export const AccountPage = () => {
     }, [user, loadingSession])
 
     // Afficher le skeleton tant que la vérification de session ou le chargement profil/commandes est en cours
-    if (loadingSession || isLoading) {
+    if (loadingSession || isLoadingProfile) {
         return (
             <section className="page active" id="account-page">
                 <div className="container account-page">
@@ -180,7 +180,6 @@ export const AccountPage = () => {
             </section>
         );
     }
-
 
 
     return (

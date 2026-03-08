@@ -55,19 +55,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // 3. Fonction Logout
   const logout = async () => {
     try {
-      await api.post("/authentification/logout/", {}, { withCredentials: true });
+      const response = await api.post("/authentification/logout/", {}, { withCredentials: true });
+      if (response.status === 200) {
+        // Nettoyage local quoi qu'il arrive
+        setUser(null);
+        localStorage.removeItem("africart_cart");
+        localStorage.removeItem("auth_token");
+        sessionStorage.removeItem("identifiant_commande");
+        sessionStorage.clear();
+
+        // Dispatch d'événements personnalisés
+        window.dispatchEvent(new CustomEvent('africart:clear_cart'));
+
+        navigate("/", { replace: true });
+      }
     } catch (error) {
       console.error("Erreur lors de la déconnexion", error);
     } finally {
-      // Nettoyage local quoi qu'il arrive
-      setUser(null);
-      localStorage.removeItem("africart_cart");
-      sessionStorage.removeItem("identifiant_commande");
-      
-      // Dispatch d'événements personnalisés
-      window.dispatchEvent(new CustomEvent('africart:clear_cart'));
-      
-      navigate("/", { replace: true });
+
     }
   };
 

@@ -7,10 +7,11 @@ import { SmallLoader } from '../components/Loader';
 import { ProductRating } from '../components/ProductRating';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { ProductSkeletonGrid } from '../skeletons';
+import { ProductSkeletonGrid, RecommendationSkeleton } from '../skeletons';
 import SearchInput from '../components/SearchInput';
 import { isNewArrival } from '../utils/isNewArrival';
 import Chatbot from '../components/Chatbot';
+import type { ProductRecommended } from '../interfaces/ProductsRecommanded';
 
 export const ProductsPage = () => {
 
@@ -37,6 +38,11 @@ export const ProductsPage = () => {
     const [offset, setOffset] = useState(0)
     const [next, setNext] = useState(null)
     const limit = 20
+    const [recommended, setRecommended] = useState<ProductRecommended[]>([]);
+    const recommendedRef = useRef<HTMLDivElement | null>(null);
+    const recIsPausedRef = useRef(false);
+    const recAutoScrollRef = useRef<number | null>(null);
+    const recDirectionRef = useRef<'right' | 'left'>('right');
 
 
     // Ajout au panier : empêche doublon, met à jour si déjà présent
@@ -162,7 +168,48 @@ export const ProductsPage = () => {
 
     useEffect(() => {
         fetchCategories();
+        // try to load recommendations
+        const fetchRecommendations = async () => {
+            try {
+                const respPopular = await api.get('/recommandations/?type=best_sellers');
+                if (respPopular.status === 200 && respPopular.data?.data) {
+                    const prods = respPopular.data.data.produits || [];
+                    setRecommended(prods);
+                }
+            } catch (e) {
+                // fallback: rien
+            }
+        };
+        fetchRecommendations();
     }, []);
+
+    const scrollRecommended = (dir: 'left' | 'right') => {
+        const el = recommendedRef.current;
+        if (!el) return;
+        const step = Math.max(160, Math.round(el.clientWidth * 0.6));
+        el.scrollBy({ left: dir === 'left' ? -step : step, behavior: 'smooth' });
+    };
+
+    useEffect(() => {
+        if (!recommended || recommended.length === 0) return;
+        if (recAutoScrollRef.current) return;
+        recAutoScrollRef.current = window.setInterval(() => {
+            if (recIsPausedRef.current) return;
+            const el = recommendedRef.current;
+            if (!el) return;
+            const max = el.scrollWidth - el.clientWidth;
+            const atEnd = el.scrollLeft >= (max - 8);
+            const atStart = el.scrollLeft <= 8;
+            if (recDirectionRef.current === 'right' && atEnd) recDirectionRef.current = 'left';
+            else if (recDirectionRef.current === 'left' && atStart) recDirectionRef.current = 'right';
+            const step = Math.max(160, Math.round(el.clientWidth * 0.6));
+            el.scrollBy({ left: recDirectionRef.current === 'right' ? step : -step, behavior: 'smooth' });
+        }, 3000) as unknown as number;
+
+        return () => {
+            if (recAutoScrollRef.current) { clearInterval(recAutoScrollRef.current as number); recAutoScrollRef.current = null; }
+        };
+    }, [recommended]);
 
     const sentinelRef = useRef<HTMLDivElement | null>(null);
 
@@ -238,6 +285,40 @@ export const ProductsPage = () => {
                             </form>
                         </div>
                     </div>
+
+                    {/* Recommandations */}
+                    {recommended && recommended.length > 0 ? (
+                        <div className="recommendation-block mb-5">
+                            <div className="section-header">
+                                <h3>PRODUITS POPULAIRES</h3>
+                            </div>
+                            <button type="button" className="carousel-nav prev" onClick={() => scrollRecommended('left')} aria-label="Précédent">‹</button>
+                            <div
+                                className="recommendation-list"
+                                ref={recommendedRef}
+                                onMouseEnter={() => { recIsPausedRef.current = true; }}
+                                onMouseLeave={() => { recIsPausedRef.current = false; }}
+                            >
+                                {recommended.map((p) => (
+                                    <article className="carousel-item" key={p.identifiant_produit} role="listitem">
+                                        <a href={`/products/detail/${p.identifiant_produit}`}>
+                                            <div className="item-image">
+                                                <img src={p.thumbnail} alt={p.nom_produit} loading="lazy" />
+                                            </div>
+                                            <div className="item-body">
+                                                <h6 style={{color:"black"}}>{p.categorie}</h6>
+                                                <div className="item-title">{p.nom_produit}</div>
+                                                <div className="item-price">{p.prix} FCFA</div>
+                                            </div>
+                                        </a>
+                                    </article>
+                                ))}
+                            </div>
+                            <button type="button" className="carousel-nav next" onClick={() => scrollRecommended('right')} aria-label="Suivant">›</button>
+                        </div>
+                    ) : (
+                        loading && <RecommendationSkeleton count={4} />
+                    )}
 
                     {/* Section Filtres et Tri */}
                     <div id="filters-section" className={`filters-section mb-5 ${showFilters ? '' : 'collapsed'}`}>
