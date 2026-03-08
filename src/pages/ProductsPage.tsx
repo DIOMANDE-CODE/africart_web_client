@@ -10,6 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import { ProductSkeletonGrid } from '../skeletons';
 import SearchInput from '../components/SearchInput';
 import { isNewArrival } from '../utils/isNewArrival';
+import Chatbot from '../components/Chatbot';
 
 export const ProductsPage = () => {
 
@@ -415,6 +416,7 @@ export const ProductsPage = () => {
                         )
                     }
                 </div>
+                <Chatbot />
             </section>
         </>
 

@@ -801,6 +801,111 @@
     }
 }
 
+/* ===== CHATBOT (intégré) ===== */
+.chatbot-toggle {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 60px;
+  height: 60px;
+  background-color: #16a34a; /* primary-ish */
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(22,163,74,0.25);
+  z-index: 1200;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.chatbot-toggle:hover { transform: scale(1.05); }
+
+.chatbot-container {
+  position: fixed;
+  bottom: 110px;
+  right: 30px;
+  width: 360px;
+  height: calc(100vh - 140px);
+  max-height: calc(100vh - 140px);
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 18px 50px rgba(15,23,42,0.18);
+  z-index: 1199;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: translateY(12px);
+  opacity: 0;
+  visibility: hidden;
+  transition: all 220ms ease;
+}
+.chatbot-container.active {
+  transform: translateY(0);
+  opacity: 1;
+  visibility: visible;
+}
+
+.chatbot-header {
+  background: linear-gradient(90deg,#16a34a,#22c55e);
+  color: #fff;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.chatbot-title { font-weight: 700; font-size: 14px; }
+.close-chatbot { background: transparent; border: none; color: #fff; font-size: 16px; cursor: pointer; }
+
+.chatbot-messages {
+  padding: 12px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1 1 auto;
+  background: linear-gradient(180deg, #fff, #f8fafc);
+}
+.message { padding: 10px 14px; border-radius: 16px; max-width: 82%; word-wrap: break-word; }
+.message-bot { background: #f1f5f9; color: #0f172a; align-self: flex-start; border-bottom-left-radius: 6px; }
+.message-user { background: #16a34a; color: #fff; align-self: flex-end; border-bottom-right-radius: 6px; }
+
+/* Typing indicator (bot thinking) */
+.typing { display: inline-flex; gap: 6px; align-items: center; padding: 8px 12px; border-radius: 14px; }
+.typing .dot { width: 8px; height: 8px; background: #94a3b8; border-radius: 50%; display: inline-block; animation: typingDots 1s infinite ease-in-out; opacity: 0.35; }
+.typing .dot:nth-child(2) { animation-delay: 0.12s; }
+.typing .dot:nth-child(3) { animation-delay: 0.24s; }
+
+@keyframes typingDots {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.35; }
+  30% { transform: translateY(-6px); opacity: 1; }
+}
+
+/* Chatbot skeleton while checking auth */
+.chatbot-skeleton { display:flex; flex-direction:column; gap:12px; padding: 12px; }
+.skeleton-row { display:flex; gap:12px; align-items:center; }
+.skeleton-avatar { width:36px; height:36px; border-radius:50%; background: linear-gradient(90deg,#e6eef2,#f8fafc); animation: shimmer 1.2s infinite; }
+.skeleton-lines { flex:1; display:flex; flex-direction:column; gap:8px; }
+.skeleton-line { height:12px; border-radius:8px; background: linear-gradient(90deg,#e6eef2,#f8fafc); animation: shimmer 1.2s infinite; }
+.skeleton-line.short { width:45%; }
+
+@keyframes shimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: 200px 0; }
+}
+.skeleton-line, .skeleton-avatar { background-size: 400px 100%; background-repeat: no-repeat; }
+
+.chatbot-input { padding: 10px; border-top: 1px solid #eee; display:flex; gap:8px; align-items:center; }
+.chatbot-input input { flex:1; padding:10px 12px; border-radius:20px; border:1px solid #e6eef2; font-family: Inter, sans-serif; }
+.chatbot-input button { width:40px; height:40px; border-radius:50%; background:#16a34a; border:none; color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+
+@media (max-width: 768px) {
+  .chatbot-container { width: 90%; right: 5%; bottom: 90px; height: 90vh; max-height: 90vh; }
+  .chatbot-toggle { right: 20px; bottom: 20px; width:50px; height:50px; }
+}
+
+
 /* Mobile Portrait (320px - 480px) */
 @media (max-width: 480px) {
     .hero-section {
@@ -914,11 +1019,6 @@
     .hero-actions {
         animation: none;
     }
-}
-        max-width: 100%;
-    }
-    
-
 }
 
 /* Tablet (880px - 1023px) */

@@ -1930,7 +1930,8 @@
             bottom: 80px;
             right: 0;
             width: 400px;
-            height: 600px;
+            height: calc(100vh - 160px);
+            max-height: calc(100vh - 160px);
             background: white;
             border-radius: var(--radius-xl);
             box-shadow: var(--shadow-2xl);

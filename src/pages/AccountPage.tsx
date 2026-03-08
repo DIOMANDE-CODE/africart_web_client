@@ -3,19 +3,15 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
 import { Alert } from "../components/Alert";
-import type { Commande } from "../interfaces/Commande";
-import { formatDate } from "../utils/formatDate";
 import { validateEmail } from "../utils/emailChecking";
 import { validationNumeroCI } from "../utils/validerNumero";
 import AccountSkeleton from "../skeletons/AccountSkeleton";
-import { useNavigate } from "react-router-dom";
 import { AccountSidebar } from "../components/AccountSidebar";
 
 export const AccountPage = () => {
     const [activeTab, setActiveTab] = useState("profile");
     const { user, setUser, logout, loadingSession } = useAuth()
     const [alert, setAlert] = useState<{ message: string; type: "success" | "error" } | null>(null);
-    const [commandes, setCommandes] = useState<Commande[]>([])
     const [ancienMdp, setAncienMdp] = useState("")
     const [nouveauMdp, setNouveauMdp] = useState("")
     const [confirmMdp, setConfirmMdp] = useState("")
@@ -26,7 +22,6 @@ export const AccountPage = () => {
     const [isLoadingProfile, setIsLoadingProfile] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
     const [isLoadingPassword, setIsLoadingPassword] = useState(false)
-    const navigate = useNavigate();
 
 
     // Live password criteria
@@ -61,42 +56,11 @@ export const AccountPage = () => {
     }, [nomUser, emailUser, numUser, user])
 
 
-
-    const voirRecu = (id: string) => {
-        navigate(`/receipt/${id}`);
-    }
-
-    const ListeCommandeClient = async () => {
-        setIsLoading(true)
-        try {
-            const response = await api.get(`/commandes/list/${user?.email_utilisateur}/`)
-
-            if (response.status === 200) {
-                console.log(response.data.data);
-                setCommandes(response.data.data)
-            }
-        }
-        catch (error: any) {
-            if (error.response) {
-                const status = error.response.status;
-
-                if (status === 400) {
-                    setAlert({ message: "Erreur de saisie.", type: "error" });
-                } else if (status === 500) {
-                    setAlert({ message: "Erreur survenue au serveur.", type: "error" });
-                } else if (status === 401) {
-                    setAlert({ message: "Accès non autorisé.", type: "error" });
-                } else {
-                    setAlert({ message: "Erreur inconnue.", type: "error" });
-                }
-            }
-        } finally {
-            setIsLoading(false)
-        }
-    }
-
     const handleUpdateProfile = async () => {
-        if (!nomUser.trim() || !emailUser.trim() || !numUser.trim()) {
+
+        const cleanedNumTel = numUser.replace(/\s/g, '');
+
+        if (!nomUser.trim() || !emailUser.trim() || !cleanedNumTel.trim()) {
             setAlert({ message: "Veuillez remplir tous les champs.", type: "error" });
             return;
         }
@@ -106,7 +70,7 @@ export const AccountPage = () => {
             return;
         }
 
-        if (!validationNumeroCI(numUser)) {
+        if (!validationNumeroCI(cleanedNumTel)) {
             setAlert({ message: "Le numéro doit respecter le format ivoirien.", type: "error" });
             return;
         }
@@ -116,7 +80,7 @@ export const AccountPage = () => {
             const response = await api.put(`/utilisateurs/detail/`, {
                 nom_utilisateur: nomUser,
                 email_utilisateur: emailUser,
-                numero_telephone_utilisateur: numUser,
+                numero_telephone_utilisateur: cleanedNumTel,
                 role: 'client',
             });
 
@@ -189,7 +153,6 @@ export const AccountPage = () => {
         // Only fetch orders when we know the session has been resolved and user exists
         if (loadingSession) return;
         if (!user) return;
-        ListeCommandeClient();
     }, [user, loadingSession])
 
     // Afficher le skeleton tant que la vérification de session ou le chargement profil/commandes est en cours
@@ -202,7 +165,7 @@ export const AccountPage = () => {
             </section>
         );
     }
-
+    
     // Si la session est résolue et qu'il n'y a pas d'utilisateur connecté, inviter à se connecter
     if (!user) {
         return (

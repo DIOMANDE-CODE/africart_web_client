@@ -7,6 +7,7 @@ import type { Category } from "../interfaces/Category";
 import { useAuth } from "../context/AuthContext";
 import { Alert } from "../components/Alert";
 import { CategoryCarouselSkeleton } from "../skeletons";
+import Chatbot from "../components/Chatbot";
 
 export const HomePage = () => {
 
@@ -153,6 +154,8 @@ export const HomePage = () => {
             {alert && (
                 <Alert message={alert.message} type={alert.type} onClose={() => setAlert(null)} duration={3000} />
             )}
+
+            <Chatbot />
 
         </>
     );
