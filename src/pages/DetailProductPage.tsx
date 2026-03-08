@@ -13,6 +13,8 @@ import { ProductDetailSkeleton, RecommendationSkeleton } from "../skeletons";
 import type { ProductRecommended } from "../interfaces/ProductsRecommanded";
 import { useRef } from "react";
 
+
+
 export const DetailProductPage = () => {
     const { user, loadingSession } = useAuth();
     // ...existing code...
@@ -33,15 +35,39 @@ export const DetailProductPage = () => {
     const [ratingSent, setRatingSent] = useState(false);
     const [ratingError, setRatingError] = useState<string | null>(null);
     const [ratingDisabled, setRatingDisabled] = useState(false);
-    // Recommandations produits de la même catégorie
+    // Recommandations produits de la même catégorie et co_achat
     const [sameCategory, setSameCategory] = useState<ProductRecommended[]>([]);
+    const [coAchat, setCoAchat] = useState<ProductRecommended[]>([]);
 
     // Same-category recommendations
+
     const [loadingSameCategory, setLoadingSameCategory] = useState(true);
+    const [loadingCoAchat, setLoadingCoAchat] = useState(true);
     const sameRef = useRef<HTMLDivElement | null>(null);
     const samePausedRef = useRef(false);
     const sameAutoRef = useRef<number | null>(null);
     const sameDirRef = useRef<'right' | 'left'>('right');
+    // co-achat (frequently bought together) separate carousel refs
+    const coRef = useRef<HTMLDivElement | null>(null);
+    const coPausedRef = useRef(false);
+    const coAutoRef = useRef<number | null>(null);
+    const coDirRef = useRef<'right' | 'left'>('right');
+
+
+
+    // Ajout produit recommandé au panier : empêche doublon, met à jour si déjà présent
+    const handleAddRecommandedToCart = (p: Product | ProductRecommended) => {
+        addToCart({
+            identifiant_produit: p.identifiant_produit,
+            nom_produit: p.nom_produit,
+            prix_unitaire_produit: (p as Product).prix_unitaire_produit || (p as ProductRecommended).prix || 0,
+            quantite_produit_disponible: (p as Product).quantite_produit_disponible || 0,
+            seuil_alerte_produit: (p as Product).seuil_alerte_produit || 0,
+            thumbnail: p.thumbnail || "",
+            image_produit: (p as Product).image_produit || p.thumbnail || "",
+            quantite_produit: 1
+        } as Product);
+    };
 
 
     const reduceQty = (qty: number) => {
@@ -175,7 +201,6 @@ export const DetailProductPage = () => {
         }
     }, [detailProduct]);
 
-
     useEffect(() => {
         const getSameCategoryProduct = async () => {
             try {
@@ -193,10 +218,35 @@ export const DetailProductPage = () => {
         getSameCategoryProduct();
     }, [id]);
 
+
+    useEffect(() => {
+        const getCoAchatProduct = async () => {
+            try {
+                const coAchatProduct = await api.get(`/recommandations/?type=co_achat&produit_id=${id}`);
+                if (coAchatProduct.status === 200 && coAchatProduct.data?.data) {
+                    const prods = coAchatProduct.data.data.produits || [];
+                    setCoAchat(prods);
+                }
+            } catch (e) {
+                // fallback: rien
+            } finally {
+                setLoadingCoAchat(false);
+            }
+        }
+        getCoAchatProduct();
+    }, [id]);
+
     const scrollSame = (dir: 'left' | 'right') => {
         const el = sameRef.current;
         if (!el) return;
         const step = Math.max(160, Math.round(el.clientWidth * 0.6));
+        el.scrollBy({ left: dir === 'left' ? -step : step, behavior: 'smooth' });
+    };
+
+    const scrollCo = (dir: 'left' | 'right') => {
+        const el = coRef.current;
+        if (!el) return;
+        const step = Math.max(140, Math.round(el.clientWidth * 0.55));
         el.scrollBy({ left: dir === 'left' ? -step : step, behavior: 'smooth' });
     };
 
@@ -221,6 +271,28 @@ export const DetailProductPage = () => {
         };
     }, [sameCategory]);
 
+    // independent auto-scroll for co-achat carousel
+    useEffect(() => {
+        if (!coAchat || coAchat.length === 0) return;
+        if (coAutoRef.current) return;
+        coAutoRef.current = window.setInterval(() => {
+            if (coPausedRef.current) return;
+            const el = coRef.current;
+            if (!el) return;
+            const max = el.scrollWidth - el.clientWidth;
+            const atEnd = el.scrollLeft >= (max - 8);
+            const atStart = el.scrollLeft <= 8;
+            if (coDirRef.current === 'right' && atEnd) coDirRef.current = 'left';
+            else if (coDirRef.current === 'left' && atStart) coDirRef.current = 'right';
+            const step = Math.max(140, Math.round(el.clientWidth * 0.55));
+            el.scrollBy({ left: coDirRef.current === 'right' ? step : -step, behavior: 'smooth' });
+        }, 3000) as unknown as number;
+
+        return () => {
+            if (coAutoRef.current) { clearInterval(coAutoRef.current as number); coAutoRef.current = null; }
+        };
+    }, [coAchat]);
+
     if (loadingSession || loading) {
         return (
             <section className="page active" id="product-detail-page">
@@ -237,30 +309,42 @@ export const DetailProductPage = () => {
                     {/* Autres produits (positionné au dessus du détail produit) */}
                     <div className="recommendation-block mb-5">
                         <div className="section-header">
-                            <h3>Autres produits</h3>
+                            <h3>Fréquemment achetés ensemble</h3>
                         </div>
-                        {loadingSameCategory ? (
+                        {loadingCoAchat ? (
                             <RecommendationSkeleton count={6} />
-                        ) : sameCategory && sameCategory.length > 0 ? (
+                        ) : coAchat && coAchat.length > 0 ? (
                             <>
-                                <button type="button" className="carousel-nav prev" onClick={() => scrollSame('left')} aria-label="Précédent">‹</button>
-                                <div className="recommendation-list" ref={sameRef} onMouseEnter={() => { samePausedRef.current = true; }} onMouseLeave={() => { samePausedRef.current = false; }}>
-                                    {sameCategory.map((p) => (
+                                <button type="button" className="carousel-nav prev" onClick={() => scrollCo('left')} aria-label="Précédent">‹</button>
+                                <div className="recommendation-list" ref={coRef} onMouseEnter={() => { coPausedRef.current = true; }} onMouseLeave={() => { coPausedRef.current = false; }}>
+                                    {coAchat.map((p) => (
                                         <article className="carousel-item" key={p.identifiant_produit} role="listitem">
-                                            <a href={`/products/detail/${p.identifiant_produit}`}>
-                                                <div className="item-image">
+                                            <div className="item-image">
+                                                <a href={`/products/detail/${p.identifiant_produit}`}>
                                                     <img src={p.thumbnail} alt={p.nom_produit} loading="lazy" />
-                                                </div>
-                                                <div className="item-body">
-                                                    <h6 style={{ color: 'black' }}>{p.categorie}</h6>
-                                                    <div className="item-title">{p.nom_produit}</div>
-                                                    <div className="item-price">{p.prix} FCFA</div>
-                                                </div>
-                                            </a>
+                                                </a>
+                                            </div>
+                                            <div className="item-body">
+                                                <h6 style={{ color: 'black' }}>{p.categorie}</h6>
+                                                <div className="item-title">{p.nom_produit}</div>
+                                                <div className="item-price">{p.prix} FCFA</div>
+                                            </div>
+                                            <div className="item-actions">
+                                                {cart.some(item => item.identifiant_produit === p.identifiant_produit) ? (
+                                                    <button className="btn btn-success btn-sm" disabled>
+                                                        <i className="fas fa-check" /> Ajouté
+                                                    </button>
+                                                ) : (
+                                                    <button className="btn btn-primary btn-sm" onClick={() => handleAddRecommandedToCart(p)}>
+                                                        <i className="fas fa-cart-plus" /> Ajouter
+                                                    </button>
+                                                )}
+
+                                            </div>
                                         </article>
                                     ))}
                                 </div>
-                                <button type="button" className="carousel-nav next" onClick={() => scrollSame('right')} aria-label="Suivant">›</button>
+                                <button type="button" className="carousel-nav next" onClick={() => scrollCo('right')} aria-label="Suivant">›</button>
                             </>
                         ) : null}
                     </div>
@@ -447,6 +531,36 @@ export const DetailProductPage = () => {
                                 </div>
                             )}
                         </div>
+                    </div>
+                    {/* Autres produits (positionné au dessus du détail produit) */}
+                    <div className="recommendation-block mb-5 background-orange">
+                        <div className="section-header">
+                            <h3>Produits similaires</h3>
+                        </div>
+                        {loadingSameCategory ? (
+                            <RecommendationSkeleton count={6} />
+                        ) : sameCategory && sameCategory.length > 0 ? (
+                            <>
+                                <button type="button" className="carousel-nav prev" onClick={() => scrollSame('left')} aria-label="Précédent">‹</button>
+                                <div className="recommendation-list" ref={sameRef} onMouseEnter={() => { samePausedRef.current = true; }} onMouseLeave={() => { samePausedRef.current = false; }}>
+                                    {sameCategory.map((p) => (
+                                        <article className="carousel-item" key={p.identifiant_produit} role="listitem">
+                                            <a href={`/products/detail/${p.identifiant_produit}`}>
+                                                <div className="item-image">
+                                                    <img src={p.thumbnail} alt={p.nom_produit} loading="lazy" />
+                                                </div>
+                                                <div className="item-body">
+                                                    <h6 style={{ color: 'black' }}>{p.categorie}</h6>
+                                                    <div className="item-title">{p.nom_produit}</div>
+                                                    <div className="item-price">{p.prix} FCFA</div>
+                                                </div>
+                                            </a>
+                                        </article>
+                                    ))}
+                                </div>
+                                <button type="button" className="carousel-nav next" onClick={() => scrollSame('right')} aria-label="Suivant">›</button>
+                            </>
+                        ) : null}
                     </div>
                 </div>
                 {alert && (

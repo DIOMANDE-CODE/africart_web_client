@@ -276,3 +276,33 @@
   height: 120px;
 }
 .container.product-detail-page .recommendation-block .item-body { padding: 6px; }
+
+/* background-orange block styling: use project orange tokens */
+.container.product-detail-page .recommendation-block.background-orange {
+  background: var(--secondary-100);
+  border-left: 6px solid var(--secondary-500);
+  border-radius: 12px;
+  padding: 0.85rem 0.6rem;
+  box-shadow: 0 8px 24px rgba(242,140,40,0.06);
+}
+.container.product-detail-page .recommendation-block.background-orange .section-header h3 {
+  color: var(--secondary-700);
+}
+.container.product-detail-page .recommendation-block.background-orange .recommendation-list .carousel-item {
+  background: #fff;
+  border-radius: 8px;
+  padding: 6px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Actions inside recommendation items */
+.container.product-detail-page .recommendation-block .item-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 6px 6px 6px;
+}
+.container.product-detail-page .recommendation-block .item-actions .btn {
+  padding: 6px 8px;
+  font-size: 0.85rem;
+}
