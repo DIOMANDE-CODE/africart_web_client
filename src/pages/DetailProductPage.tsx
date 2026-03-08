@@ -9,7 +9,9 @@ import { toUpperCase } from "../utils/upperCase";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { Alert } from "../components/Alert";
-import { ProductDetailSkeleton } from "../skeletons";
+import { ProductDetailSkeleton, RecommendationSkeleton } from "../skeletons";
+import type { ProductRecommended } from "../interfaces/ProductsRecommanded";
+import { useRef } from "react";
 
 export const DetailProductPage = () => {
     const { user, loadingSession } = useAuth();
@@ -31,6 +33,15 @@ export const DetailProductPage = () => {
     const [ratingSent, setRatingSent] = useState(false);
     const [ratingError, setRatingError] = useState<string | null>(null);
     const [ratingDisabled, setRatingDisabled] = useState(false);
+    // Recommandations produits de la même catégorie
+    const [sameCategory, setSameCategory] = useState<ProductRecommended[]>([]);
+
+    // Same-category recommendations
+    const [loadingSameCategory, setLoadingSameCategory] = useState(true);
+    const sameRef = useRef<HTMLDivElement | null>(null);
+    const samePausedRef = useRef(false);
+    const sameAutoRef = useRef<number | null>(null);
+    const sameDirRef = useRef<'right' | 'left'>('right');
 
 
     const reduceQty = (qty: number) => {
@@ -74,6 +85,19 @@ export const DetailProductPage = () => {
         }
     };
 
+
+    // Fonction pour signaler que le produit a été vue
+    const produitVue = async () => {
+        try {
+            await api.post(`/recommandations/vue/`, {
+                produit_id: id
+            }, {
+                withCredentials: true
+            });
+        } catch (error: any) {
+            console.error("Erreur lors de la mise à jour de la vue du produit :", error);
+        }
+    }
 
 
     // Fonction pour récupérer les détails du produit depuis l'API
@@ -137,7 +161,10 @@ export const DetailProductPage = () => {
     }, [detailProduct]);
 
     useEffect(() => {
-        fetchProductDetails();
+        if (id) {
+            produitVue();
+            fetchProductDetails();
+        }
     }, [id]);
 
     // when product details load, set the selected image
@@ -147,6 +174,52 @@ export const DetailProductPage = () => {
             setSelectedImage(detailProduct.image_produit || detailProduct.thumbnail);
         }
     }, [detailProduct]);
+
+
+    useEffect(() => {
+        const getSameCategoryProduct = async () => {
+            try {
+                const sameCategoryProduct = await api.get(`/recommandations/?type=similar_categorie&produit_id=${id}`);
+                if (sameCategoryProduct.status === 200 && sameCategoryProduct.data?.data) {
+                    const prods = sameCategoryProduct.data.data.produits || [];
+                    setSameCategory(prods);
+                }
+            } catch (e) {
+                // fallback: rien
+            } finally {
+                setLoadingSameCategory(false);
+            }
+        }
+        getSameCategoryProduct();
+    }, [id]);
+
+    const scrollSame = (dir: 'left' | 'right') => {
+        const el = sameRef.current;
+        if (!el) return;
+        const step = Math.max(160, Math.round(el.clientWidth * 0.6));
+        el.scrollBy({ left: dir === 'left' ? -step : step, behavior: 'smooth' });
+    };
+
+    useEffect(() => {
+        if (!sameCategory || sameCategory.length === 0) return;
+        if (sameAutoRef.current) return;
+        sameAutoRef.current = window.setInterval(() => {
+            if (samePausedRef.current) return;
+            const el = sameRef.current;
+            if (!el) return;
+            const max = el.scrollWidth - el.clientWidth;
+            const atEnd = el.scrollLeft >= (max - 8);
+            const atStart = el.scrollLeft <= 8;
+            if (sameDirRef.current === 'right' && atEnd) sameDirRef.current = 'left';
+            else if (sameDirRef.current === 'left' && atStart) sameDirRef.current = 'right';
+            const step = Math.max(160, Math.round(el.clientWidth * 0.6));
+            el.scrollBy({ left: sameDirRef.current === 'right' ? step : -step, behavior: 'smooth' });
+        }, 3000) as unknown as number;
+
+        return () => {
+            if (sameAutoRef.current) { clearInterval(sameAutoRef.current as number); sameAutoRef.current = null; }
+        };
+    }, [sameCategory]);
 
     if (loadingSession || loading) {
         return (
@@ -161,6 +234,36 @@ export const DetailProductPage = () => {
             {/* Page Détail Produit */}
             <section className="page active" id="product-detail-page">
                 <div className="container product-detail-page">
+                    {/* Autres produits (positionné au dessus du détail produit) */}
+                    <div className="recommendation-block mb-5">
+                        <div className="section-header">
+                            <h3>Autres produits</h3>
+                        </div>
+                        {loadingSameCategory ? (
+                            <RecommendationSkeleton count={6} />
+                        ) : sameCategory && sameCategory.length > 0 ? (
+                            <>
+                                <button type="button" className="carousel-nav prev" onClick={() => scrollSame('left')} aria-label="Précédent">‹</button>
+                                <div className="recommendation-list" ref={sameRef} onMouseEnter={() => { samePausedRef.current = true; }} onMouseLeave={() => { samePausedRef.current = false; }}>
+                                    {sameCategory.map((p) => (
+                                        <article className="carousel-item" key={p.identifiant_produit} role="listitem">
+                                            <a href={`/products/detail/${p.identifiant_produit}`}>
+                                                <div className="item-image">
+                                                    <img src={p.thumbnail} alt={p.nom_produit} loading="lazy" />
+                                                </div>
+                                                <div className="item-body">
+                                                    <h6 style={{ color: 'black' }}>{p.categorie}</h6>
+                                                    <div className="item-title">{p.nom_produit}</div>
+                                                    <div className="item-price">{p.prix} FCFA</div>
+                                                </div>
+                                            </a>
+                                        </article>
+                                    ))}
+                                </div>
+                                <button type="button" className="carousel-nav next" onClick={() => scrollSame('right')} aria-label="Suivant">›</button>
+                            </>
+                        ) : null}
+                    </div>
                     {/* ...existing code... */}
                     <div className="product-detail" id="productDetailContainer">
                         <div className="product-gallery">
@@ -169,7 +272,7 @@ export const DetailProductPage = () => {
                                     src={selectedImage || detailProduct?.image_produit}
                                     alt={detailProduct?.nom_produit}
                                     id="mainProductImage"
-                                        loading="lazy"
+                                    loading="lazy"
                                 />
                             </div>
                             <div className="thumbnails">
@@ -181,7 +284,7 @@ export const DetailProductPage = () => {
                                     <img
                                         src={detailProduct?.thumbnail}
                                         alt={detailProduct?.nom_produit}
-                                            loading="lazy"
+                                        loading="lazy"
                                     />
                                 </div>
                                 <div
@@ -192,7 +295,7 @@ export const DetailProductPage = () => {
                                     <img
                                         src={detailProduct?.thumbnail_2}
                                         alt={detailProduct?.nom_produit}
-                                            loading="lazy"
+                                        loading="lazy"
                                     />
                                 </div>
                                 <div
@@ -203,7 +306,7 @@ export const DetailProductPage = () => {
                                     <img
                                         src={detailProduct?.thumbnail_3}
                                         alt={detailProduct?.nom_produit}
-                                            loading="lazy"
+                                        loading="lazy"
                                     />
                                 </div>
                             </div>
@@ -315,6 +418,8 @@ export const DetailProductPage = () => {
                                     </div>
                                 )
                             }
+
+
 
                             <div className="product-actions-large">
                                 {
