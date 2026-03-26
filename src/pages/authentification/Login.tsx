@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import "../../styles/Login.css";
 import { Alert } from "../../components/Alert";
 import api from "../../services/api";
@@ -13,10 +13,17 @@ export const Login = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [alert, setAlert] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [alert, setAlert] = useState<{ message: string; type: "success" | "error"; duration?: number } | null>(null);
 
 
   const navigate = useNavigate();
+  const timeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,7 +43,6 @@ export const Login = () => {
       setLoading(false);
       return;
     }
-
 
     try {
       const response = await api.post(

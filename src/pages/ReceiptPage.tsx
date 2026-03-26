@@ -296,7 +296,7 @@ export const ReceiptPage = () => {
                         <div className="footer-contact">
                             <div className="contact-item">
                                 <i className="fas fa-phone"></i>
-                                <span>+225 05 95 03 16</span>
+                                <span>+225 05 95 03 16 94</span>
                             </div>
                             <div className="contact-item">
                                 <i className="fas fa-envelope"></i>

@@ -1,24 +1,21 @@
 /* ===== ALERT FLOTTANTE ===== */
 .alert-floating {
   position: fixed;
-  top: 32px;
-  right: 32px;
-  min-width: 260px;
-  max-width: 420px;
+  top: clamp(8px, 2vh, 32px);
+  right: clamp(8px, 3vw, 32px);
+  min-width: clamp(260px, 80vw, 280px);
+  max-width: clamp(260px, 90vw, 420px);
   z-index: 3000;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 18px;
-  border-radius: 12px;
-  font-size: 1rem;
+  gap: clamp(8px, 1vw, 12px);
+  padding: clamp(8px, 2vh, 12px) clamp(12px, 2vw, 18px);
+  border-radius: clamp(8px, 1.5vw, 12px);
+  font-size: clamp(0.875rem, 2vw, 1rem);
   font-weight: 600;
   box-shadow: 0 8px 32px rgba(0,0,0,0.08);
   animation: alertSlideIn 0.45s cubic-bezier(0.2,0.9,0.2,1);
   transition: opacity 0.25s, transform 0.25s;
-  position: fixed;
-  right: 32px;
-  top: 32px;
   background-clip: padding-box;
   overflow: hidden;
   isolation: isolate;

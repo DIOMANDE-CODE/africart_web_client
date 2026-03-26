@@ -6,8 +6,8 @@
 
 .checkout-container {
   display: grid;
-  grid-template-columns: 1fr 360px;
-  gap: var(--space-xl);
+  grid-template-columns: 1fr clamp(260px, 90vw, 360px);
+  gap: clamp(12px, 2vw, var(--space-xl));
   align-items: start;
   width: 100%;
 }
@@ -21,8 +21,8 @@
 
 .checkout-form, .order-summary {
   background: white;
-  border-radius: var(--radius-lg);
-  padding: var(--space-lg);
+  border-radius: clamp(8px, 2vw, var(--radius-lg));
+  padding: clamp(12px, 3vw, var(--space-lg));
   border: 1px solid var(--neutral-200);
   box-shadow: var(--shadow-sm);
 }

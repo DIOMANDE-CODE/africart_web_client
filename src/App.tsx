@@ -21,8 +21,7 @@ function App() {
 
   // Vérifie si on est sur la page login
   const isLoginPage = location.pathname === "/login" || location.pathname === "/register";
-
-
+  
   return (
     <AuthProvider>
       <CartProvider>

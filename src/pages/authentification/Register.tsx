@@ -1,9 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "../../styles/Register.css";
 import { Alert } from "../../components/Alert";
 import { validateEmail } from "../../utils/emailChecking";
 import api from "../../services/api";
 import { validationNumeroCI } from "../../utils/validerNumero";
+import { useRef } from "react";
+import { useNavigate } from "react-router-dom";
 
 export const Register = () => {
   const [nom, setnom] = useState("");
@@ -13,7 +15,17 @@ export const Register = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [alert, setAlert] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [alert, setAlert] = useState<{ message: string; type: "success" | "error"; duration?: number } | null>(null);
+
+
+  const navigate = useNavigate();
+  const timeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
 
   // Live password criteria
   const isLengthValid = password.length >= 6;
@@ -37,6 +49,12 @@ export const Register = () => {
     isConfirmMatch &&
     !loading;
 
+  // Function to filter out numbers from name input
+  const handleNameChange = (value: string) => {
+    // Remove all digits from the input
+    const filteredValue = value.replace(/\d/g, '');
+    setnom(filteredValue);
+  };
 
   const Inscription = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,7 +97,12 @@ export const Register = () => {
         "role": "client"
       });
       if (response.status === 201) {
-        setAlert({ message: "Inscription terminée! Veuillez-vous cpnnecter", type: "success" });
+        setAlert({ message: "Inscription terminée! Veuillez-vous connecter", type: "success" });
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        timeoutRef.current = window.setTimeout(() => {
+          setAlert(null);
+          navigate("/login");
+        }, 3000);
         setnom("");
         setEmail("");
         setPassword("");
@@ -131,7 +154,7 @@ export const Register = () => {
                 className="login-input"
                 placeholder="Votre nom et prénoms"
                 value={nom}
-                onChange={e => setnom(e.target.value)}
+                onChange={e => handleNameChange(e.target.value)}
                 required
               />
 
