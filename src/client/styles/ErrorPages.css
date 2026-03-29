@@ -1,0 +1,272 @@
+/* ===== ERROR PAGES (404 / 500) ===== */
+
+.error-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  padding: var(--space-2xl) var(--space-lg);
+}
+
+/* ── Backgrounds ── */
+.error-page--404 {
+  background:
+    linear-gradient(135deg, var(--primary-50) 0%, rgba(255, 255, 255, 0.95) 55%, var(--secondary-50) 100%);
+}
+
+.error-page--500 {
+  background:
+    linear-gradient(135deg, var(--secondary-50) 0%, rgba(255, 255, 255, 0.95) 55%, var(--tertiary-50) 100%);
+}
+
+/* ── Floating decorative blobs ── */
+.error-blob {
+  position: absolute;
+  border-radius: var(--radius-full);
+  opacity: 0.07;
+  animation: errorFloat 7s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.error-blob--1 {
+  width: clamp(200px, 30vw, 420px);
+  height: clamp(200px, 30vw, 420px);
+  top: -12%;
+  left: -10%;
+  animation-delay: 0s;
+}
+
+.error-blob--2 {
+  width: clamp(150px, 22vw, 320px);
+  height: clamp(150px, 22vw, 320px);
+  bottom: -8%;
+  right: -6%;
+  animation-delay: 2.5s;
+}
+
+.error-blob--3 {
+  width: clamp(70px, 10vw, 160px);
+  height: clamp(70px, 10vw, 160px);
+  top: 38%;
+  right: 12%;
+  animation-delay: 5s;
+}
+
+.error-page--404 .error-blob--1 { background: var(--primary-400); }
+.error-page--404 .error-blob--2 { background: var(--secondary-400); }
+.error-page--404 .error-blob--3 { background: var(--tertiary-400); }
+
+.error-page--500 .error-blob--1 { background: var(--secondary-400); }
+.error-page--500 .error-blob--2 { background: var(--tertiary-400); }
+.error-page--500 .error-blob--3 { background: var(--neutral-400); }
+
+@keyframes errorFloat {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-22px) scale(1.04); }
+}
+
+/* ── Glass card ── */
+.error-card {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  max-width: 600px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: var(--radius-2xl);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow:
+    var(--shadow-2xl),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  padding: clamp(2.5rem, 8vw, 5rem) clamp(1.5rem, 6vw, 4rem);
+  animation: errorCardEntrance 0.85s cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+@keyframes errorCardEntrance {
+  from {
+    opacity: 0;
+    transform: translateY(48px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ── Emoji icon ── */
+.error-icon {
+  font-size: clamp(2.8rem, 8vw, 5rem);
+  margin-bottom: var(--space-md);
+  display: block;
+  animation: errorIconBounce 3s ease-in-out infinite;
+  line-height: 1;
+}
+
+@keyframes errorIconBounce {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  40%       { transform: translateY(-14px) rotate(-4deg); }
+  60%       { transform: translateY(-10px) rotate(3deg); }
+}
+
+/* ── Giant code number ── */
+.error-code {
+  font-family: var(--font-heading);
+  font-size: clamp(5rem, 22vw, 10rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  margin-bottom: var(--space-sm);
+  display: inline-block;
+  animation: errorCodePop 0.9s cubic-bezier(0.23, 1, 0.32, 1) 0.15s both;
+}
+
+@keyframes errorCodePop {
+  from { opacity: 0; transform: scale(0.45) rotate(-6deg); }
+  to   { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+.error-code--404 {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 4px 18px rgba(30, 127, 67, 0.22));
+}
+
+.error-code--500 {
+  background: var(--gradient-secondary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 4px 18px rgba(242, 140, 40, 0.28));
+}
+
+/* ── Decorative dots ── */
+.error-dots {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: var(--space-lg);
+  animation: fadeIn 0.8s ease-out 0.3s both;
+}
+
+.error-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+  animation: errorDotPulse 1.6s ease-in-out infinite;
+}
+
+.error-dot:nth-child(1) { animation-delay: 0s; }
+.error-dot:nth-child(2) { animation-delay: 0.25s; }
+.error-dot:nth-child(3) { animation-delay: 0.5s; }
+
+@keyframes errorDotPulse {
+  0%, 100% { transform: scale(1);   opacity: 0.6; }
+  50%       { transform: scale(1.5); opacity: 1; }
+}
+
+/* ── Status pill ── */
+.error-detail {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
+  border-radius: var(--radius-full);
+  font-family: var(--font-heading);
+  font-size: 0.825rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  margin-bottom: var(--space-xl);
+  animation: slideUp 0.6s ease-out 0.35s both;
+}
+
+.error-detail--404 {
+  background: var(--primary-50);
+  color: var(--primary-700);
+  border: 1px solid var(--primary-200);
+}
+
+.error-detail--500 {
+  background: var(--secondary-50);
+  color: var(--secondary-700);
+  border: 1px solid var(--secondary-200);
+}
+
+/* ── Typography ── */
+.error-title {
+  font-family: var(--font-heading);
+  font-size: clamp(1.15rem, 3.5vw, 1.75rem);
+  font-weight: 700;
+  color: var(--neutral-800);
+  margin-bottom: var(--space-md);
+  animation: slideUp 0.65s ease-out 0.4s both;
+}
+
+.error-message {
+  font-family: var(--font-body);
+  font-size: clamp(0.875rem, 2.2vw, 1rem);
+  color: var(--neutral-500);
+  line-height: 1.75;
+  margin-bottom: var(--space-2xl);
+  animation: slideUp 0.65s ease-out 0.5s both;
+}
+
+/* ── Action buttons ── */
+.error-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  justify-content: center;
+  animation: slideUp 0.65s ease-out 0.6s both;
+}
+
+/* ── Brand watermark ── */
+.error-brand {
+  margin-top: var(--space-2xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  animation: fadeIn 1s ease-out 0.85s both;
+}
+
+.error-brand-name {
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--neutral-400);
+  letter-spacing: 0.5px;
+}
+
+.error-brand-name span {
+  color: var(--primary-400);
+}
+
+/* ── Divider ── */
+.error-divider {
+  width: 48px;
+  height: 3px;
+  border-radius: var(--radius-full);
+  margin: 0 auto var(--space-xl);
+  animation: fadeIn 0.8s ease-out 0.3s both;
+}
+
+.error-page--404 .error-divider { background: var(--gradient-primary); }
+.error-page--500 .error-divider { background: var(--gradient-secondary); }
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  .error-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .error-actions .btn {
+    justify-content: center;
+  }
+}

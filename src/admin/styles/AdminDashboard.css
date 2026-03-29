@@ -1,0 +1,106 @@
+/* ══════════════════════════════════════════════════
+   AdminDashboard.css — Dashboard-specific styles
+   ══════════════════════════════════════════════════ */
+
+/* ─── Stats Grid ─── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(clamp(200px, 25vw, 280px), 1fr));
+  gap: var(--space-lg);
+  margin-bottom: var(--space-xl);
+}
+
+/* ─── Quick Stats ─── */
+.quick-stats {
+  display: flex;
+  gap: var(--space-md);
+  margin-bottom: var(--space-xl);
+  flex-wrap: wrap;
+}
+
+.quick-stat-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  background: white;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--neutral-100);
+  flex: 1;
+  min-width: 200px;
+}
+
+.quick-stat-item i {
+  font-size: 1.25rem;
+  color: var(--primary-500);
+}
+
+.quick-stat-item.alert i {
+  color: var(--warning);
+}
+
+.quick-stat-item strong {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  color: var(--neutral-900);
+  display: block;
+}
+
+.quick-stat-item span {
+  font-size: 0.8rem;
+  color: var(--neutral-500);
+}
+
+/* ─── Dashboard Grid ─── */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--space-lg);
+}
+
+.dashboard-card {
+  background: white;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--neutral-100);
+  overflow: hidden;
+}
+
+.dashboard-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-lg) var(--space-xl);
+  border-bottom: 1px solid var(--neutral-100);
+}
+
+.dashboard-card-header h3 {
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  color: var(--neutral-800);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.dashboard-card-header h3 i {
+  font-size: 0.9rem;
+  color: var(--primary-500);
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 1024px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 576px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .quick-stats {
+    flex-direction: column;
+  }
+}
