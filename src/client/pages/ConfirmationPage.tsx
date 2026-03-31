@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import axios from 'axios';
 import "../styles/ConfirmationPage.css";
 import { Link } from "react-router-dom";
 import { getOrderDetail } from "../services/commandeService";
@@ -32,48 +33,49 @@ export const ConfirmationPage = () => {
         }
     };
 
-    const detail_commande = async () => {
-        try {
-            const response = await getOrderDetail(reference_commande!)
+    useEffect(() => {
+        if (loadingSession) return; // wait for session check
 
-            if (response.status === 200) {
-                const detail = response.data.data
-                console.log(response.data.data);
-                setIdentifiantCommande(detail.identifiant_commande)
-                setStatusCommande(detail.etat_commande)
-                setDateCommande(formatDate(detail.date_commande))
-                setTotalPaye(detail.total_ttc)
-                setCodeLivraison(detail.code_livraison)
-                setLieuLivraison(detail.lieu_livraison)
-                setNomClient(detail.client.nom_client)
-                setNumero(detail.client.numero_telephone_client)
+        (async () => {
+            setLoading(true);
+            try {
+                const response = await getOrderDetail(reference_commande ?? '');
 
-            }
-        }
-        catch (error: any) {
-            if (error.response) {
-                const status = error.response.status;
+                if (response?.status === 200) {
+                    const detail = response?.data?.data;
+                    if (detail) {
+                        console.log(detail);
+                        setIdentifiantCommande(detail.identifiant_commande ?? '');
+                        setStatusCommande(detail.etat_commande ?? '');
+                        setDateCommande(detail.date_commande ? formatDate(detail.date_commande) : '');
+                        setTotalPaye(detail.total_ttc ?? '');
+                        setCodeLivraison(detail.code_livraison ?? '');
+                        setLieuLivraison(detail.lieu_livraison ?? '');
+                        setNomClient(detail.client?.nom_client ?? '');
+                        setNumero(detail.client?.numero_telephone_client ?? '');
+                    }
+                }
+            } catch (err: unknown) {
+                if (axios.isAxiosError(err) && err.response) {
+                    const status = err.response.status;
 
-                if (status === 400) {
-                    setAlert({ message: "Erreur de saisie.", type: "error" });
-                } else if (status === 500) {
-                    setAlert({ message: "Erreur survenue au serveur.", type: "error" });
-                } else if (status === 401) {
-                    setAlert({ message: "Accès non autorisé.", type: "error" });
+                    if (status === 400) {
+                        setAlert({ message: "Erreur de saisie.", type: "error" });
+                    } else if (status === 500) {
+                        setAlert({ message: "Erreur survenue au serveur.", type: "error" });
+                    } else if (status === 401) {
+                        setAlert({ message: "Accès non autorisé.", type: "error" });
+                    } else {
+                        setAlert({ message: "Erreur inconnue.", type: "error" });
+                    }
                 } else {
                     setAlert({ message: "Erreur inconnue.", type: "error" });
                 }
+            } finally {
+                setLoading(false);
             }
-        }
-        finally {
-            setLoading(false)
-        }
-    }
-
-    useEffect(() => {
-        if (loadingSession) return; // wait for session check
-        detail_commande()
-    }, [reference_commande, loadingSession])
+        })();
+    }, [reference_commande, loadingSession]);
 
     if (loadingSession) return <ConfirmationSkeleton />;
 

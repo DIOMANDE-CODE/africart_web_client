@@ -77,22 +77,33 @@ export const HomePage = () => {
         // setAlert({ message: parsed, type: 'error' });
     }, [isErrorRecPersonal, recPersonalError, navigate]);
 
+    const pickString = (obj: unknown, ...keys: string[]) => {
+        if (!obj || typeof obj !== 'object') return '';
+        const rec = obj as Record<string, unknown>;
+        for (const k of keys) {
+            const v = rec[k];
+            if (typeof v === 'string') return v;
+            if (typeof v === 'number') return String(v);
+        }
+        return '';
+    };
+
+    const pickArray = (obj: unknown, ...keys: string[]) => {
+        if (!obj || typeof obj !== 'object') return [] as unknown[];
+        const rec = obj as Record<string, unknown>;
+        for (const k of keys) {
+            const v = rec[k];
+            if (Array.isArray(v)) return v as unknown[];
+        }
+        return Array.isArray(obj) ? (obj as unknown[]) : [];
+    };
+
     const recommendedPersonal: Product[] = useMemo(() => {
         if (!recPersonalData) return [];
 
         // Extraction tolérante (Data > Data.Data > Root)
         const raw = recPersonalData?.data?.data ?? recPersonalData?.data ?? recPersonalData;
-        const arr = Array.isArray(raw?.produits)
-            ? raw.produits
-            : Array.isArray(raw?.products)
-            ? raw.products
-            : Array.isArray(raw?.items)
-            ? raw.items
-            : Array.isArray(raw?.results)
-            ? raw.results
-            : Array.isArray(raw)
-            ? raw
-            : [];
+        const arr = pickArray(raw, 'produits', 'products', 'items', 'results') as Product[];
 
         console.debug('recommendedPersonal resolved:', arr);
         return arr;
@@ -123,22 +134,10 @@ export const HomePage = () => {
 
 
     const recommendedPopular: ProductRecommended[] = useMemo(() => {
-        
         if (!recPopularData) return [];
 
-        // Extraction tolérante (Data > Data.Data > Root)
         const raw = recPopularData?.data?.data ?? recPopularData?.data ?? recPopularData;
-        const arr = Array.isArray(raw?.produits)
-            ? raw.produits
-            : Array.isArray(raw?.products)
-            ? raw.products
-            : Array.isArray(raw?.items)
-            ? raw.items
-            : Array.isArray(raw?.results)
-            ? raw.results
-            : Array.isArray(raw)
-            ? raw
-            : [];
+        const arr = pickArray(raw, 'produits', 'products', 'items', 'results') as ProductRecommended[];
 
         console.debug('recommendedPopular resolved:', arr);
         return arr;
@@ -232,11 +231,11 @@ export const HomePage = () => {
                                     <div className="recommendation-block mb-5">
                                         <div className="section-header"><h3>Recommandés pour vous</h3></div>
                                         <div className="recommendation-list">
-                                            {recommendedPersonal.map((p, i) => {
-                                                const key = (p as any)?.identifiant_produit ?? (p as any)?.id ?? (p as any)?._id ?? `recP-${i}`;
-                                                const thumb = (p as any)?.thumbnail ?? (p as any)?.image ?? '';
-                                                const name = (p as any)?.nom_produit ?? (p as any)?.name ?? 'Produit';
-                                                const price = (p as any)?.prix_unitaire_produit ?? (p as any)?.prix ?? (p as any)?.price ?? '';
+                                                            {recommendedPersonal.map((p, i) => {
+                                                                const key = pickString(p, 'identifiant_produit', 'id', '_id') || `recP-${i}`;
+                                                                const thumb = pickString(p, 'thumbnail', 'image', 'image_produit');
+                                                                const name = pickString(p, 'nom_produit', 'name') || 'Produit';
+                                                                const price = pickString(p, 'prix_unitaire_produit', 'prix', 'price') || '';
                                                 return (
                                                     <div key={key} className="rec-card">
                                                         <img src={thumb} alt={name} loading="lazy" />
@@ -265,12 +264,12 @@ export const HomePage = () => {
                                             onMouseLeave={() => isPausedRef.current = false}
                                         >
                                             {recommendedPopular.map((p, i) => {
-                                                const key = (p as any)?.identifiant_produit ?? (p as any)?.id ?? (p as any)?._id ?? `recPop-${i}`;
-                                                const id = (p as any)?.identifiant_produit ?? (p as any)?.id ?? (p as any)?._id ?? '';
-                                                const thumb = (p as any)?.thumbnail ?? (p as any)?.image ?? '';
-                                                const name = (p as any)?.nom_produit ?? (p as any)?.name ?? 'Produit';
-                                                const catLabel = (p as any)?.categorie ?? (p as any)?.category ?? '';
-                                                const price = (p as any)?.prix ?? (p as any)?.prix_unitaire_produit ?? (p as any)?.price ?? '';
+                                                const key = pickString(p, 'identifiant_produit', 'id', '_id') || `recPop-${i}`;
+                                                const id = pickString(p, 'identifiant_produit', 'id', '_id');
+                                                const thumb = pickString(p, 'thumbnail', 'image', 'image_produit');
+                                                const name = pickString(p, 'nom_produit', 'name') || 'Produit';
+                                                const catLabel = pickString(p, 'categorie', 'category') || '';
+                                                const price = pickString(p, 'prix', 'prix_unitaire_produit', 'price') || '';
                                                 return (
                                                     <article className="carousel-item" key={key}>
                                                         <Link to={`/products/detail/${id}`}>
@@ -309,16 +308,10 @@ export const HomePage = () => {
                         {isGlobalLoading ? (
                             <><CategoryCarouselSkeleton /><CategoryCarouselSkeleton /></>
                         ) : (
-                            category.slice(0, 5).map((c) => {
-                                const key = (c as any)?.identifiant_categorie ?? (c as any)?.id ?? (c as any)?.nom_categorie ?? `cat-${Math.random().toString(36).slice(2,8)}`;
-                                const title = (c as any)?.nom_categorie ?? (c as any)?.name ?? 'Rayon';
-                                const products = Array.isArray((c as any)?.produits)
-                                    ? (c as any).produits
-                                    : Array.isArray((c as any)?.products)
-                                    ? (c as any).products
-                                    : Array.isArray((c as any)?.items)
-                                    ? (c as any).items
-                                    : [];
+                            category.slice(0, 5).map((c, idx) => {
+                                const key = pickString(c, 'identifiant_categorie', 'id') || `cat-${idx}`;
+                                const title = pickString(c, 'nom_categorie', 'name') || 'Rayon';
+                                const products = pickArray(c, 'produits', 'products', 'items') as Product[];
                                 return (
                                     <CategoryCarousel
                                         key={key}

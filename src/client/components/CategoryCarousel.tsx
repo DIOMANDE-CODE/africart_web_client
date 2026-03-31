@@ -77,6 +77,17 @@ export const CategoryCarousel: React.FC<Props> = ({ title, products = [] }) => {
     };
   }, [products]);
 
+  const pickString = (obj: unknown, ...keys: string[]) => {
+    if (!obj || typeof obj !== 'object') return '';
+    const rec = obj as Record<string, unknown>;
+    for (const k of keys) {
+      const v = rec[k];
+      if (typeof v === 'string') return v;
+      if (typeof v === 'number') return String(v);
+    }
+    return '';
+  };
+
   return (
     <section className="category-carousel">
       <div className="carousel-header">
@@ -103,11 +114,11 @@ export const CategoryCarousel: React.FC<Props> = ({ title, products = [] }) => {
 
       <div className="carousel-track" ref={trackRef} role="list">
         {products.map((p, i) => {
-          const id = (p as any)?.identifiant_produit ?? (p as any)?.id ?? (p as any)?._id ?? '';
+          const id = pickString(p, 'identifiant_produit', 'id', '_id');
           const key = id || `prod-${i}`;
-          const thumb = (p as any)?.thumbnail ?? (p as any)?.image ?? '';
-          const name = (p as any)?.nom_produit ?? (p as any)?.name ?? 'Produit';
-          const price = (p as any)?.prix_unitaire_produit ?? (p as any)?.prix ?? (p as any)?.price ?? '';
+          const thumb = pickString(p, 'thumbnail', 'image', 'image_produit', 'image_produit_2');
+          const name = pickString(p, 'nom_produit', 'name') || 'Produit';
+          const price = pickString(p, 'prix_unitaire_produit', 'prix', 'price');
           return (
             <article className="carousel-item" key={key} role="listitem">
               <Link to={`/products/detail/${id}`}>
