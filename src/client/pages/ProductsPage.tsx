@@ -32,7 +32,7 @@ export const ProductsPage = () => {
     const sentinelRef = useRef<HTMLDivElement | null>(null);
 
     // --- 1. CHARGEMENT DES CATÉGORIES ---
-    const { data: catData, isError: isCatError, error: catError, refetch: refetchCategories } = useCategories();
+    const { data: catData, isError: isCatError, error: catError } = useCategories();
     const categories = catData?.data?.data || catData?.data || catData || [];
 
     // --- 2. INFINITE SCROLL AVEC TANSTACK QUERY ---
@@ -44,8 +44,7 @@ export const ProductsPage = () => {
         isLoading: isLoadingProd,
         isFetching: isFetchingProd,
         isError: isProdError,
-        error: prodError,
-        refetch: refetchProducts
+        error: prodError
     } = useProducts({
         limit,
         categorie: categorieParams,
@@ -138,33 +137,6 @@ export const ProductsPage = () => {
 
     // État global de chargement pour les Skeletons
     const isGlobalLoading = loadingSession || isLoadingProd || isLoadingRecPopular;
-
-    // --- RENDU ---
-
-    // If there is a fatal error and no products to show, render an error state with retry
-    if ((isCatError || isProdError) && allProducts.length === 0) {
-        const sourceError = isCatError ? catError : prodError;
-        const errAny = sourceError as unknown as Record<string, unknown>;
-        const parsedObj = errAny?.parsed as Record<string, unknown> | undefined;
-        const parsedMessage = (typeof parsedObj?.message === 'string' ? parsedObj.message : null) || (typeof errAny?.message === 'string' ? errAny.message : null) || 'Erreur lors du chargement des produits.';
-        return (
-            <section className="page products-page active">
-                <div className="container" style={{ padding: '80px 0' }}>
-                    <div style={{ textAlign: 'center' }} role="alert" aria-live="assertive">
-                        <i className="fas fa-exclamation-circle fa-3x mb-3" style={{ color: '#e74c3c' }} />
-                        <h2>Impossible de charger les produits</h2>
-                        <p style={{ marginBottom: 18 }}>{parsedMessage}</p>
-                        <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-                            <button className="btn btn-primary" onClick={() => { refetchCategories?.(); refetchProducts?.(); }}>
-                                Réessayer
-                            </button>
-                            <button className="btn-back" onClick={() => navigate('/')}>Retour à l'accueil</button>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        );
-    }
 
     if (loadingSession || (isLoadingProd && allProducts.length === 0)) {
         return <ProductSkeletonGrid count={12} />;

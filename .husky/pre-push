@@ -1,4 +1,9 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-    npm run build
+    echo "Vérifications de pré-push pour AfriCart..."
+
+    npm run build || exit 1
+
+    echo "Build terminé !"
+

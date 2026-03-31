@@ -24,13 +24,16 @@ export interface CreateOrderPayload {
 export const createOrder = (payload: CreateOrderPayload) =>
   api.post('/commandes/creer/', payload, { withCredentials: true });
 
+export const getOrderDetail = (reference: string) =>
+  api.get(`/commandes/detail/${reference}/`, { withCredentials: true });
+
 
 // Recupérer les Detail de la commande
 export const useOrderDetail = (reference: string) => {
   return useQuery({
     queryKey: ['orderDetail', reference],
     queryFn: async () => {
-      const { data } = await api.get(`/commandes/detail/${reference}/`, { withCredentials: true });
+      const { data } = await getOrderDetail(reference);
       return data;
     },
     enabled: !!reference, // Ne pas lancer la requête si la référence est vide

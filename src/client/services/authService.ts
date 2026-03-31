@@ -16,7 +16,7 @@ export interface RegisterPayload {
 }
 
 export const register = (data: RegisterPayload) =>
-  api.post('/utilisateurs/create/', data);
+  api.post('/utilisateurs/create/', data, { withCredentials: false });
 
 export const checkSessionApi = () =>
   api.get('/authentification/check_session/', { withCredentials: true });

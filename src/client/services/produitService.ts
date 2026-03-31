@@ -7,10 +7,10 @@ import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 
 
 // Appel des API purs
-export const fetchCategories = () => api.get('/produits/list/categorie/');
-export const fetchProducts = (params: Record<string, unknown>) => api.get('/produits/list/', { params });
-export const fetchProductDetail = (id: string) => api.get(`/produits/detail/${id}/`);
-export const fetchAverageRating = (id: string) => api.get(`/produits/note_moyenne/${id}/`);
+export const fetchCategories = () => api.get('/produits/list/categorie/', { withCredentials: false });
+export const fetchProducts = (params: Record<string, unknown>) => api.get('/produits/list/', { params, withCredentials: false });
+export const fetchProductDetail = (id: string) => api.get(`/produits/detail/${id}/`, { withCredentials: false });
+export const fetchAverageRating = (id: string) => api.get(`/produits/note_moyenne/${id}/`, { withCredentials: false });
 
 // HOOK PERSONNALISÉS POUR LES PRODUITS AVEC TANSTACK QUERY
 export interface GetProductsParams {

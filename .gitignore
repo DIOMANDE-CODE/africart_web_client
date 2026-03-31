@@ -54,6 +54,9 @@ node_modules/.cache/
 ### Dependency bundlers / lock caches ###
 *.tgz
 
+# Certificats SSL locaux
+*.pem
+
 ### Misc / Brouillons ###
 brouillon.tsx
 temp/

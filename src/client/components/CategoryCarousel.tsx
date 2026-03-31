@@ -7,10 +7,10 @@ import type { Product } from "../interfaces/Product";
 
 type Props = {
   title: string;
-  products: Product[];
+  products?: Product[];
 };
 
-export const CategoryCarousel: React.FC<Props> = ({ title, products }) => {
+export const CategoryCarousel: React.FC<Props> = ({ title, products = [] }) => {
   const trackRef = useRef<HTMLDivElement | null>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -102,19 +102,26 @@ export const CategoryCarousel: React.FC<Props> = ({ title, products }) => {
       </div>
 
       <div className="carousel-track" ref={trackRef} role="list">
-        {products.map((p) => (
-          <article className="carousel-item" key={p.identifiant_produit} role="listitem">
-            <Link to={`/products/detail/${p.identifiant_produit}`}>
-              <div className="item-image">
-                <img src={p.thumbnail} alt={p.nom_produit} loading="lazy" />
-              </div>
-              <div className="item-body">
-                <div className="item-title">{p.nom_produit}</div>
-                <div className="item-price">{p.prix_unitaire_produit} FCFA</div>
-              </div>
-            </Link>
-          </article>
-        ))}
+        {products.map((p, i) => {
+          const id = (p as any)?.identifiant_produit ?? (p as any)?.id ?? (p as any)?._id ?? '';
+          const key = id || `prod-${i}`;
+          const thumb = (p as any)?.thumbnail ?? (p as any)?.image ?? '';
+          const name = (p as any)?.nom_produit ?? (p as any)?.name ?? 'Produit';
+          const price = (p as any)?.prix_unitaire_produit ?? (p as any)?.prix ?? (p as any)?.price ?? '';
+          return (
+            <article className="carousel-item" key={key} role="listitem">
+              <Link to={`/products/detail/${id}`}>
+                <div className="item-image">
+                  <img src={thumb} alt={name} loading="lazy" />
+                </div>
+                <div className="item-body">
+                  <div className="item-title">{name}</div>
+                  <div className="item-price">{price} FCFA</div>
+                </div>
+              </Link>
+            </article>
+          );
+        })}
       </div>
     </section>
   );

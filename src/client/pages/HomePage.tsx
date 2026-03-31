@@ -20,17 +20,30 @@ export const HomePage = () => {
     const { user, loadingSession } = useAuth();
     const [alert, setAlert] = useState<{ message: string; type: "success" | "error" } | null>(null);
     const [category, setCategory] = useState<Category[]>([]);
-    const navigate = useNavigate();
+    const navigate = useNavigate(); 
 
     // --- 2. RÉCUPÉRATION DES CATÉGORIES (TanStack Query) ---
     // Note: Assure-toi que ton service utilise l'URL correcte : /categories/list/ (avec slash)
-    const { data: catData, isLoading: isLoadingCat, isError: isCatError, error: catError, refetch: refetchCategories } = useCategories();
+    const { data: catData, isLoading: isLoadingCat, isError: isCatError, error: catError } = useCategories();
 
     useEffect(() => {
         if (catData) {
-            // Mapping flexible selon la structure de ta réponse Django
-            const rawData = catData.data?.data || catData.data || catData;
-            setTimeout(() => setCategory(Array.isArray(rawData) ? rawData : []), 0);
+            // Debug: inspecter la forme réelle de la réponse
+            console.debug('catData raw:', catData);
+
+            // Mapping tolérant selon plusieurs schémas possibles
+            const raw = catData?.data?.data ?? catData?.data ?? catData;
+            const categories = Array.isArray(raw)
+                ? raw
+                : Array.isArray(raw?.results)
+                ? raw.results
+                : Array.isArray(raw?.categories)
+                ? raw.categories
+                : Array.isArray(raw?.items)
+                ? raw.items
+                : [];
+
+            setTimeout(() => setCategory(categories), 0);
         }
         if (isCatError) {
             const errAny = catError as unknown as Record<string, unknown>;
@@ -48,7 +61,6 @@ export const HomePage = () => {
         error: recPersonalError,
     } = usePersonalRecommendations(!!user && !loadingSession);
 
-
     useEffect(() => {
         if (!isErrorRecPersonal) return;
         const errAny = recPersonalError as unknown as Record<string, unknown>;
@@ -65,16 +77,25 @@ export const HomePage = () => {
         // setAlert({ message: parsed, type: 'error' });
     }, [isErrorRecPersonal, recPersonalError, navigate]);
 
-
     const recommendedPersonal: Product[] = useMemo(() => {
         if (!recPersonalData) return [];
 
-        // Extraction flexible (Data > Data.Data > Root)
-        const rawData = recPersonalData.data?.data || recPersonalData.data || recPersonalData;
+        // Extraction tolérante (Data > Data.Data > Root)
+        const raw = recPersonalData?.data?.data ?? recPersonalData?.data ?? recPersonalData;
+        const arr = Array.isArray(raw?.produits)
+            ? raw.produits
+            : Array.isArray(raw?.products)
+            ? raw.products
+            : Array.isArray(raw?.items)
+            ? raw.items
+            : Array.isArray(raw?.results)
+            ? raw.results
+            : Array.isArray(raw)
+            ? raw
+            : [];
 
-        // Extraction de la clé 'produits' ou du tableau brut
-        return Array.isArray(rawData?.produits) ? rawData.produits :
-            Array.isArray(rawData) ? rawData : [];
+        console.debug('recommendedPersonal resolved:', arr);
+        return arr;
     }, [recPersonalData]);
 
     const {
@@ -102,18 +123,26 @@ export const HomePage = () => {
 
 
     const recommendedPopular: ProductRecommended[] = useMemo(() => {
+        
         if (!recPopularData) return [];
 
-        // Extraction flexible (Data > Data.Data > Root)
-        const rawData = recPopularData.data?.data || recPopularData.data || recPopularData;
+        // Extraction tolérante (Data > Data.Data > Root)
+        const raw = recPopularData?.data?.data ?? recPopularData?.data ?? recPopularData;
+        const arr = Array.isArray(raw?.produits)
+            ? raw.produits
+            : Array.isArray(raw?.products)
+            ? raw.products
+            : Array.isArray(raw?.items)
+            ? raw.items
+            : Array.isArray(raw?.results)
+            ? raw.results
+            : Array.isArray(raw)
+            ? raw
+            : [];
 
-        // Extraction de la clé 'produits' ou du tableau brut
-        return Array.isArray(rawData?.produits) ? rawData.produits :
-            Array.isArray(rawData) ? rawData : [];
-    }, [recPopularData]);
-
-
-
+        console.debug('recommendedPopular resolved:', arr);
+        return arr;
+    }, [recPopularData]);   
 
 
     // --- 4. LOGIQUE DU CARROUSEL HERO ---
@@ -162,29 +191,6 @@ export const HomePage = () => {
     // État global de chargement pour les Skeletons
     const isGlobalLoading = loadingSession || isLoadingCat || isLoadingRecPersonal || isLoadingRecPopular;
 
-    // Si la récupération des catégories a échoué et qu'il n'y a aucune catégorie, afficher un écran d'erreur
-    if (isCatError && category.length === 0) {
-        const errAny = catError as unknown as Record<string, unknown>;
-        const parsedObj = errAny?.parsed as Record<string, unknown> | undefined;
-        const parsedMessage = (typeof parsedObj?.message === 'string' ? parsedObj.message : null) || (typeof errAny?.message === 'string' ? errAny.message : null) || 'Impossible de charger les catégories.';
-        return (
-            <section id="home" className="page">
-                <div className="container" style={{ padding: '80px 0' }}>
-                    <div style={{ textAlign: 'center' }} role="alert" aria-live="assertive">
-                        <i className="fas fa-exclamation-circle fa-3x mb-3" style={{ color: '#e74c3c' }} />
-                        <h2>Erreur de chargement</h2>
-                        <p style={{ marginBottom: 18 }}>{parsedMessage}</p>
-                        <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-                            <button className="btn btn-primary" onClick={() => refetchCategories && refetchCategories()}>
-                                Réessayer
-                            </button>
-                            <button className="btn-back" onClick={() => navigate('/products')}>Voir les produits</button>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        );
-    }
 
     return (
         <>
@@ -226,15 +232,21 @@ export const HomePage = () => {
                                     <div className="recommendation-block mb-5">
                                         <div className="section-header"><h3>Recommandés pour vous</h3></div>
                                         <div className="recommendation-list">
-                                            {recommendedPersonal.map((p) => (
-                                                <div key={p.identifiant_produit} className="rec-card">
-                                                    <img src={p.thumbnail} alt={p.nom_produit} loading="lazy" />
-                                                    <div className="rec-meta">
-                                                        <div className="rec-title">{p.nom_produit}</div>
-                                                        <div className="rec-price">{p.prix_unitaire_produit} FCFA</div>
+                                            {recommendedPersonal.map((p, i) => {
+                                                const key = (p as any)?.identifiant_produit ?? (p as any)?.id ?? (p as any)?._id ?? `recP-${i}`;
+                                                const thumb = (p as any)?.thumbnail ?? (p as any)?.image ?? '';
+                                                const name = (p as any)?.nom_produit ?? (p as any)?.name ?? 'Produit';
+                                                const price = (p as any)?.prix_unitaire_produit ?? (p as any)?.prix ?? (p as any)?.price ?? '';
+                                                return (
+                                                    <div key={key} className="rec-card">
+                                                        <img src={thumb} alt={name} loading="lazy" />
+                                                        <div className="rec-meta">
+                                                            <div className="rec-title">{name}</div>
+                                                            <div className="rec-price">{price} FCFA</div>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            ))}
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 )}
@@ -252,18 +264,26 @@ export const HomePage = () => {
                                             onMouseEnter={() => isPausedRef.current = true}
                                             onMouseLeave={() => isPausedRef.current = false}
                                         >
-                                            {recommendedPopular.map((p) => (
-                                                <article className="carousel-item" key={p.identifiant_produit}>
-                                                    <Link to={`/products/detail/${p.identifiant_produit}`}>
-                                                        <div className="item-image"><img src={p.thumbnail} alt={p.nom_produit} /></div>
-                                                        <div className="item-body">
-                                                            <h6 className="category-label">{p.categorie}</h6>
-                                                            <div className="item-title">{p.nom_produit}</div>
-                                                            <div className="item-price">{p.prix} FCFA</div>
-                                                        </div>
-                                                    </Link>
-                                                </article>
-                                            ))}
+                                            {recommendedPopular.map((p, i) => {
+                                                const key = (p as any)?.identifiant_produit ?? (p as any)?.id ?? (p as any)?._id ?? `recPop-${i}`;
+                                                const id = (p as any)?.identifiant_produit ?? (p as any)?.id ?? (p as any)?._id ?? '';
+                                                const thumb = (p as any)?.thumbnail ?? (p as any)?.image ?? '';
+                                                const name = (p as any)?.nom_produit ?? (p as any)?.name ?? 'Produit';
+                                                const catLabel = (p as any)?.categorie ?? (p as any)?.category ?? '';
+                                                const price = (p as any)?.prix ?? (p as any)?.prix_unitaire_produit ?? (p as any)?.price ?? '';
+                                                return (
+                                                    <article className="carousel-item" key={key}>
+                                                        <Link to={`/products/detail/${id}`}>
+                                                            <div className="item-image"><img src={thumb} alt={name} /></div>
+                                                            <div className="item-body">
+                                                                <h6 className="category-label">{catLabel}</h6>
+                                                                <div className="item-title">{name}</div>
+                                                                <div className="item-price">{price} FCFA</div>
+                                                            </div>
+                                                        </Link>
+                                                    </article>
+                                                );
+                                            })}
                                         </div>
                                         <button className="carousel-nav next" onClick={() => scrollPopular('right')}>›</button>
                                     </div>
@@ -289,13 +309,24 @@ export const HomePage = () => {
                         {isGlobalLoading ? (
                             <><CategoryCarouselSkeleton /><CategoryCarouselSkeleton /></>
                         ) : (
-                            category.slice(0, 5).map((c) => (
-                                <CategoryCarousel
-                                    key={c.identifiant_categorie}
-                                    title={c.nom_categorie}
-                                    products={c.produits}
-                                />
-                            ))
+                            category.slice(0, 5).map((c) => {
+                                const key = (c as any)?.identifiant_categorie ?? (c as any)?.id ?? (c as any)?.nom_categorie ?? `cat-${Math.random().toString(36).slice(2,8)}`;
+                                const title = (c as any)?.nom_categorie ?? (c as any)?.name ?? 'Rayon';
+                                const products = Array.isArray((c as any)?.produits)
+                                    ? (c as any).produits
+                                    : Array.isArray((c as any)?.products)
+                                    ? (c as any).products
+                                    : Array.isArray((c as any)?.items)
+                                    ? (c as any).items
+                                    : [];
+                                return (
+                                    <CategoryCarousel
+                                        key={key}
+                                        title={title}
+                                        products={products}
+                                    />
+                                );
+                            })
                         )}
                     </div>
                 </div>

@@ -8,13 +8,13 @@ export const getPersonalRecommendations = () =>
   api.get('/recommendations?type=personal');
 
 export const getPopularRecommendations = () =>
-  api.get('/recommandations/', { params: { type: 'personnalise' } });
+  api.get('/recommandations/', { params: { type: 'personnalise' }, withCredentials: false });
 
 export const getSimilarCategoryProducts = (productId: string) =>
-  api.get('/recommandations/', { params: { type: 'similar_categorie', produit_id: productId } });
+  api.get('/recommandations/', { params: { type: 'similar_categorie', produit_id: productId }, withCredentials: false });
 
 export const getCoPurchaseProducts = (productId: string) =>
-  api.get('/recommandations/', { params: { type: 'co_achat', produit_id: productId } });
+  api.get('/recommandations/', { params: { type: 'co_achat', produit_id: productId }, withCredentials: false });
 
 export const trackView = (productId: string) =>
   api.post('/recommandations/vue/', { produit_id: productId }, { withCredentials: true });
