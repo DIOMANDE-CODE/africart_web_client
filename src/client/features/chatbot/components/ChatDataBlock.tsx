@@ -10,20 +10,21 @@ import {
  * Renders structured backend data returned alongside a bot reply.
  * Returns null when `data` is absent or unrecognised.
  */
-export function ChatDataBlock({ data }: { data: any }) {
+export function ChatDataBlock({ data }: { data?: unknown }) {
   if (!data) return null;
+  const d = data as Record<string, unknown>;
 
   // Produits (recherche / détails / catégorie / recommandations)
-  const produits: any[] | null = data.produits ?? data.recommandations ?? null;
-  if (produits?.length) {
+  const produits = (d.produits ?? d.recommandations) as Array<Record<string, unknown>> | undefined;
+  if (produits && produits.length > 0) {
     return (
       <div className="chat-data-block">
-        {data.categorie && (
-          <div className="chat-section-label">Catégorie : {data.categorie}</div>
+        {d.categorie != null && (
+          <div className="chat-section-label">Catégorie : {String(d.categorie)}</div>
         )}
         <div className="chat-cards-scroll">
-          {produits.map((p: any, i: number) => (
-            <ProduitCard key={i} p={p} />
+          {produits.map((p, i) => (
+            <ProduitCard key={i} p={p as Record<string, unknown>} />
           ))}
         </div>
       </div>
@@ -31,13 +32,14 @@ export function ChatDataBlock({ data }: { data: any }) {
   }
 
   // Promotions
-  if (data.promotions?.length) {
+  const promotions = d.promotions as Array<Record<string, unknown>> | undefined;
+  if (promotions && promotions.length > 0) {
     return (
       <div className="chat-data-block">
         <div className="chat-section-label">🎉 Promotions en cours</div>
         <div className="chat-cards-scroll">
-          {data.promotions.map((p: any, i: number) => (
-            <PromoCard key={i} p={p} />
+          {promotions.map((p, i) => (
+            <PromoCard key={i} p={p as Record<string, unknown>} />
           ))}
         </div>
       </div>
@@ -45,8 +47,9 @@ export function ChatDataBlock({ data }: { data: any }) {
   }
 
   // Liste de commandes
-  if (data.commandes) {
-    if (data.commandes.length === 0) {
+  const commandes = d.commandes as Array<Record<string, unknown>> | undefined;
+  if (commandes) {
+    if (commandes.length === 0) {
       return (
         <div className="chat-data-block chat-empty">Aucune commande récente.</div>
       );
@@ -54,47 +57,48 @@ export function ChatDataBlock({ data }: { data: any }) {
     return (
       <div className="chat-data-block">
         <div className="chat-section-label">Vos commandes récentes</div>
-        {data.commandes.map((c: any, i: number) => (
-          <CommandeRow key={i} c={c} />
+        {commandes.map((c, i) => (
+          <CommandeRow key={i} c={c as Record<string, unknown>} />
         ))}
       </div>
     );
   }
 
   // Détails d'une commande
-  if (data.commande_details) {
+  if (d.commande_details) {
     return (
       <div className="chat-data-block">
-        <CommandeDetails d={data.commande_details} />
+        <CommandeDetails d={d.commande_details as Record<string, unknown>} />
       </div>
     );
   }
-  if (data.commande) {
+  if (d.commande) {
     return (
       <div className="chat-data-block">
-        <CommandeRow c={data.commande} />
+        <CommandeRow c={d.commande as Record<string, unknown>} />
       </div>
     );
   }
 
   // Profil utilisateur
-  if (data.profil) {
+  if (d.profil) {
     return (
       <div className="chat-data-block">
-        <ProfilCard p={data.profil} />
+        <ProfilCard p={d.profil as Record<string, unknown>} />
       </div>
     );
   }
 
   // Catégories disponibles
-  if (data.categories_disponibles?.length) {
+  const cats = d.categories_disponibles as string[] | undefined;
+  if (cats && cats.length > 0) {
     return (
       <div className="chat-data-block">
         <div className="chat-section-label">Catégories disponibles</div>
         <div className="chat-tags">
-          {data.categories_disponibles.map((c: string, i: number) => (
+          {cats.map((c, i) => (
             <span key={i} className="chat-tag">
-              {c}
+              {String(c)}
             </span>
           ))}
         </div>
@@ -103,20 +107,26 @@ export function ChatDataBlock({ data }: { data: any }) {
   }
 
   // Zones de livraison
-  if (data.zones?.length) {
+  const zones = d.zones as Array<Record<string, unknown>> | undefined;
+  if (zones && zones.length > 0) {
     return (
       <div className="chat-data-block">
         <div className="chat-section-label">📍 Zones de livraison</div>
-        {data.zones.map((z: any, i: number) => (
-          <div key={i} className="chat-zone-row">
-            <span>{z.nom_zone}</span>
-            {z.frais_livraison != null && (
-              <span className="chat-zone-frais">
-                {Number(z.frais_livraison).toLocaleString("fr-FR")} FCFA
-              </span>
-            )}
-          </div>
-        ))}
+        {zones.map((z, i) => {
+          const zn = z as Record<string, unknown>;
+          const nom = String(zn.nom_zone ?? '');
+          const frais = zn.frais_livraison != null ? Number(zn.frais_livraison) : null;
+          return (
+            <div key={i} className="chat-zone-row">
+              <span>{nom}</span>
+              {frais != null && (
+                <span className="chat-zone-frais">
+                  {frais.toLocaleString("fr-FR")} FCFA
+                </span>
+              )}
+            </div>
+          );
+        })}
       </div>
     );
   }

@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useEffect } from "react";
 import type { Product } from "../interfaces/Product";
 
@@ -36,11 +37,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const handler = () => {
       setCart([]);
-      try {
-        localStorage.removeItem("africart_cart");
-      } catch (e) {
-        /* ignore */
-      }
+        try {
+          localStorage.removeItem("africart_cart");
+        } catch {
+          // ignore
+        }
     };
     window.addEventListener('africart:clear_cart', handler as EventListener);
     return () => window.removeEventListener('africart:clear_cart', handler as EventListener);

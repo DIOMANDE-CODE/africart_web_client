@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { getOrderDetail } from "../services/commandeService";
+import { useOrderDetail } from "../services/commandeService";
 import { formatDate } from "../utils/formatDate";
 import ReceiptSkeleton from "../skeletons/ReceiptSkeleton";
 import "../styles/ReceiptPage.css";
@@ -17,8 +17,11 @@ export const ReceiptPage = () => {
     const { 
         data: responseData, 
         isLoading: isQueryLoading, 
-        isError 
-    } = getOrderDetail(id || "");
+        isError,
+        error,
+        refetch,
+        isFetching
+    } = useOrderDetail(id || "");
 
     const commande = responseData?.data || responseData;
 
@@ -62,7 +65,32 @@ export const ReceiptPage = () => {
         return <ReceiptSkeleton />;
     }
 
-    if (isError || !commande || !user) {
+    if (isError) {
+        const errAny = error as unknown as Record<string, unknown>;
+        const parsedObj = errAny?.parsed as Record<string, unknown> | undefined;
+        const parsedMessage = (typeof parsedObj?.message === 'string' ? parsedObj.message : null) || (typeof errAny?.message === 'string' ? errAny.message : null) || 'Erreur lors du chargement du reçu.';
+        return (
+            <section className="receipt-page">
+                <div className="receipt-container">
+                    <div className="receipt-error text-center" role="alert" aria-live="assertive">
+                        <i className="fas fa-exclamation-circle fa-3x mb-3" style={{color: '#e74c3c'}}></i>
+                        <h2>Erreur</h2>
+                        <p className="mb-4">{parsedMessage}</p>
+                        <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+                            <button className="btn btn-primary" onClick={() => refetch && refetch()} disabled={isFetching}>
+                                {isFetching ? 'Réessai…' : 'Réessayer'}
+                            </button>
+                            <button className="btn-back" onClick={() => navigate('/commandes')}>
+                                <i className="fas fa-arrow-left"></i> Retour aux commandes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        );
+    }
+
+    if (!commande || !user) {
         return (
             <section className="receipt-page">
                 <div className="receipt-container">
@@ -165,19 +193,22 @@ export const ReceiptPage = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {commande.details_commandes?.map((detail: any, index: number) => (
+                                    {commande.details_commandes?.map((detail: Record<string, unknown>, index: number) => {
+                                        const produit = detail.produit as Record<string, unknown>;
+                                        return (
                                         <tr key={index}>
                                             <td>
                                                 <div className="product-cell">
-                                                    <img src={detail.produit.thumbnail} alt={detail.produit.nom_produit} className="product-thumbnail" />
-                                                    <span className="product-name">{detail.produit.nom_produit}</span>
+                                                    <img src={String(produit.thumbnail)} alt={String(produit.nom_produit)} className="product-thumbnail" />
+                                                    <span className="product-name">{String(produit.nom_produit)}</span>
                                                 </div>
                                             </td>
-                                            <td className="text-center">x {detail.quantite}</td>
-                                            <td className="text-right">{parseFloat(detail.prix_unitaire).toLocaleString()}</td>
-                                            <td className="text-right">{parseFloat(detail.sous_total).toLocaleString()}</td>
+                                            <td className="text-center">x {String(detail.quantite)}</td>
+                                            <td className="text-right">{parseFloat(String(detail.prix_unitaire)).toLocaleString()}</td>
+                                            <td className="text-right">{parseFloat(String(detail.sous_total)).toLocaleString()}</td>
                                         </tr>
-                                    ))}
+                                    );
+                                    })}
                                 </tbody>
                             </table>
                         </div>

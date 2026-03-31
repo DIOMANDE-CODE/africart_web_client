@@ -1,7 +1,7 @@
 import "../styles/AccountPage.css";
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
-import { getUsersOrders } from "../services/commandeService"; // Correction du nom de l'import
+import { useUsersOrders } from "../services/commandeService";
 import { Alert } from "../components/Alert";
 import type { Commande } from "../interfaces/Commande";
 import { formatDate } from "../utils/formatDate";
@@ -23,8 +23,10 @@ const CommandesPage = () => {
         hasNextPage,
         isFetchingNextPage,
         isLoading: isQueryLoading,
-        isError
-    } = getUsersOrders(user?.email_utilisateur || "");
+        isError,
+        error: commandesError,
+        refetch
+    } = useUsersOrders(user?.email_utilisateur || "");
 
     // Aplatir les pages de commandes
     const allCommandes: Commande[] = data?.pages.flatMap(page => {
@@ -52,12 +54,33 @@ const CommandesPage = () => {
         return () => observer.disconnect();
     }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-    // Gestion des erreurs
+    // Gestion des erreurs (utilise l'erreur parsée attachée par le client API)
+    const parseError = (err: unknown) => {
+        if (!err || typeof err !== 'object') return { message: 'Erreur lors de la récupération des commandes.', status: null as number | null };
+        const e = err as Record<string, unknown>;
+        const parsed = e['parsed'] as Record<string, unknown> | undefined;
+        const message = parsed && typeof parsed['message'] === 'string' ? parsed['message'] : (typeof e['message'] === 'string' ? e['message'] : 'Erreur lors de la récupération des commandes.');
+        const resp = e['response'] as Record<string, unknown> | undefined;
+        const status = resp && typeof resp['status'] === 'number' ? Number(resp['status']) : (resp && typeof resp['status'] === 'string' ? Number(resp['status']) : null);
+        return { message, status };
+    };
+    const { message: parsedErrorMessage, status: errorStatus } = parseError(commandesError);
+
     useEffect(() => {
         if (isError) {
-            setAlert({ message: "Erreur lors de la récupération des commandes.", type: "error" });
+            if (allCommandes.length === 0) {
+                // Si aucune donnée, on laisse le rendu afficher une page d'erreur complète (voir plus bas)
+                if (errorStatus === 401) {
+                    // avoid synchronous setState in effect
+                    setTimeout(() => setAlert({ message: "Session expirée. Veuillez vous reconnecter.", type: "error" }), 0);
+                    navigate('/login', { replace: true });
+                }
+            } else {
+                // Si on a déjà des commandes affichées, afficher une alerte non bloquante
+                setTimeout(() => setAlert({ message: parsedErrorMessage, type: "error" }), 0);
+            }
         }
-    }, [isError]);
+    }, [isError, errorStatus, parsedErrorMessage, allCommandes.length, navigate]);
 
     // --- ÉTATS DE CHARGEMENT & AUTH ---
     if (loadingSession || (isQueryLoading && allCommandes.length === 0)) {
@@ -78,6 +101,26 @@ const CommandesPage = () => {
                         <h2>Vous devez être connecté pour voir vos commandes</h2>
                         <p>Veuillez vous connecter pour accéder à cette page.</p>
                         <button onClick={() => navigate('/login')} className="btn btn-primary">Se connecter</button>
+                    </div>
+                </div>
+            </section>
+        );
+    }
+
+    // Si l'appel a échoué et qu'il n'y a aucune commande à afficher, montrer une page d'erreur avec possibilité de retry
+    if (isError && allCommandes.length === 0) {
+        return (
+            <section className="page active" id="account-page">
+                <div className="container account-page">
+                    <div className="not-logged">
+                        <h2>Erreur</h2>
+                        <p>{parsedErrorMessage}</p>
+                        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                            <button onClick={() => { refetch(); setAlert(null); }} className="btn btn-primary">Réessayer</button>
+                            {errorStatus === 401 && (
+                                <button onClick={() => navigate('/login')} className="btn">Se reconnecter</button>
+                            )}
+                        </div>
                     </div>
                 </div>
             </section>

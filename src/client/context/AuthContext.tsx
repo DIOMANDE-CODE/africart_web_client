@@ -1,4 +1,5 @@
-import React, { createContext, useState, useEffect, useContext } from "react";
+/* eslint-disable react-refresh/only-export-components */
+import React, { createContext, useState, useEffect, useContext, useCallback } from "react";
 import { checkSessionApi, logoutApi } from "../services/authService";
 import { getUserInfo as fetchUserInfoApi } from "../services/utilisateurService";
 import type { User } from "../interfaces/User";
@@ -21,7 +22,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
 
   // 1. Récupération des infos utilisateur
-  const fetchUserInfo = async () => {
+  const fetchUserInfo = useCallback(async () => {
     try {
       const response = await fetchUserInfoApi();
       if (response.status === 200) {
@@ -32,10 +33,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       setUser(null);
     }
-  };
+  }, []);
 
   // 2. Vérification de session via cookie HttpOnly
-  const checkSession = async () => {
+  const checkSession = useCallback(async () => {
     setLoadingSession(true);
     try {
       const response = await checkSessionApi();
@@ -44,15 +45,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         setUser(null);
       }
-    } catch (error) {
+    } catch {
       setUser(null);
     } finally {
       setLoadingSession(false);
     }
-  };
+  }, [fetchUserInfo]);
 
   // 3. Fonction Logout
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       const response = await logoutApi();
       if (response.status === 200) {
@@ -68,17 +69,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         navigate("/", { replace: true });
       }
-    } catch (error) {
-      console.error("Erreur lors de la déconnexion", error);
-    } finally {
-
+    } catch (err) {
+      console.error("Erreur lors de la déconnexion", err);
     }
-  };
+  }, [navigate]);
 
   // Vérifie la session au montage du composant
   useEffect(() => {
     checkSession();
-  }, []);
+  }, [checkSession]);
+
+  // Écoute des erreurs globales d'API (ex: 401 non autorisé) émises par l'instance axios
+  useEffect(() => {
+    const handler = () => {
+      try {
+        // clear local user and navigate to login
+        setUser(null);
+        localStorage.removeItem('auth_token');
+        window.dispatchEvent(new CustomEvent('africart:clear_cart'));
+        navigate('/login', { replace: true });
+      } catch (err) {
+        console.error('Error handling unauthorized event', err);
+      }
+    };
+    window.addEventListener('africart:unauthorized', handler as EventListener);
+    return () => window.removeEventListener('africart:unauthorized', handler as EventListener);
+  }, [navigate]);
 
   return (
     <AuthContext.Provider value={{ user, setUser, logout, checkSession, fetchUserInfo, loadingSession }}>

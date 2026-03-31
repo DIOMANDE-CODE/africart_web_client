@@ -1,5 +1,5 @@
 import "../styles/CheckoutPage.css";
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import { Alert } from "../components/Alert";
@@ -27,35 +27,46 @@ export const CheckoutPage = () => {
     // États du formulaire
     const [ville, setVille] = useState("");
     const [isFetchingAddress, setIsFetchingAddress] = useState(false);
-    const [suggestions, setSuggestions] = useState<any[]>([]);
+    const [suggestions, setSuggestions] = useState<Array<Record<string, unknown>>>([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
 
     // Correction du type NodeJS.Timeout
     const geocodeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const [zones, setZones] = useState<Zone[]>([]);
+    const [zonesError, setZonesError] = useState<unknown>(null);
     const [selectedZone, setSelectedZone] = useState<Zone | null>(null);
     const [coords, setCoords] = useState<[number, number] | null>(null);
     const [alert, setAlert] = useState<{ message: string; type: "success" | "error" } | null>(null);
     const [loading, setLoading] = useState(false);
     const [isLoadingZones, setIsLoadingZones] = useState(true);
 
-    // 1. Charger les zones au montage
-    useEffect(() => {
-        const fetchZones = async () => {
-            setIsLoadingZones(true);
-            try {
-                const response = await getDeliveryZones();
-                console.log(response.data.data);
-                setZones(response.data.data)
-            } catch (error) {
-                console.error("Erreur zones:", error);
-            } finally {
-                setIsLoadingZones(false);
+    // 1. Charger les zones au montage (exposé pour pouvoir retry)
+    const fetchZones = useCallback(async () => {
+        setIsLoadingZones(true);
+        setZonesError(null);
+        try {
+            const response = await getDeliveryZones();
+            setZones(response.data.data || response.data || []);
+        } catch (error) {
+            console.error("Erreur zones:", error);
+            setZones([]);
+            setZonesError(error);
+            const errAny = error as Record<string, unknown>;
+            const parsedObj = errAny?.parsed as Record<string, unknown> | undefined;
+            const parsed = (typeof parsedObj?.message === 'string' ? parsedObj.message : null) || (typeof errAny?.message === 'string' ? errAny.message : null) || 'Erreur lors de la récupération des zones de livraison.';
+            const resp = errAny?.response as Record<string, unknown> | undefined;
+            const status = resp?.status != null ? Number(resp.status) : null;
+            setAlert({ message: parsed, type: 'error' });
+            if (status === 401) {
+                navigate('/login', { replace: true });
             }
-        };
-        fetchZones();
-    }, []);
+        } finally {
+            setIsLoadingZones(false);
+        }
+    }, [navigate]);
+
+    useEffect(() => { fetchZones(); }, [fetchZones]);
 
     // 2. Géocodage des suggestions (quand l'utilisateur tape)
     useEffect(() => {
@@ -159,7 +170,7 @@ export const CheckoutPage = () => {
                 longitude_client: coords?.[1] || null
             };
             const response = await createOrder(payload);
-            if (response.status === 200 || response.status === 201) {
+            if (Number(response.status) === 200 || Number(response.status) === 201) {
                 console.log(response.data);
 
                 clearCart();
@@ -168,7 +179,15 @@ export const CheckoutPage = () => {
                 navigate("/confirmation");
             }
         } catch (error) {
-            setAlert({ message: "Erreur lors de la validation.", type: "error" });
+            const errAny = error as Record<string, unknown>;
+            const parsedObj = errAny?.parsed as Record<string, unknown> | undefined;
+            const parsed = (typeof parsedObj?.message === 'string' ? parsedObj.message : null) || (typeof errAny?.message === 'string' ? errAny.message : null) || 'Erreur lors de la validation.';
+            const resp = errAny?.response as Record<string, unknown> | undefined;
+            const status = resp?.status != null ? Number(resp.status) : null;
+            setAlert({ message: parsed, type: 'error' });
+            if (status === 401) {
+                navigate('/login', { replace: true });
+            }
         } finally {
             setLoading(false);
         }
@@ -177,6 +196,31 @@ export const CheckoutPage = () => {
     // Afficher le skeleton pendant la vérification de session ou le chargement des zones
     if (isLoadingZones) {
         return <CheckoutSkeleton />;
+    }
+
+    // Si le chargement des zones a échoué et qu'il n'y a aucune zone, afficher une page d'erreur avec retry
+    if (!isLoadingZones && zones.length === 0 && zonesError) {
+        const errAny = zonesError as Record<string, unknown>;
+        const parsedObj = errAny?.parsed as Record<string, unknown> | undefined;
+        const parsed = (typeof parsedObj?.message === 'string' ? parsedObj.message : null) || (typeof errAny?.message === 'string' ? errAny.message : null) || 'Erreur lors de la récupération des zones de livraison.';
+        const resp = errAny?.response as Record<string, unknown> | undefined;
+        const status = resp?.status != null ? Number(resp.status) : null;
+        return (
+            <section className="page active" id="checkout-page">
+                <div className="container checkout-page">
+                    <div className="not-logged">
+                        <h2>Erreur</h2>
+                        <p>{parsed}</p>
+                        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                            <button onClick={() => { fetchZones(); setAlert(null); }} className="btn btn-primary">Réessayer</button>
+                            {status === 401 && (
+                                <button onClick={() => navigate('/login')} className="btn">Se reconnecter</button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </section>
+        );
     }
 
     return (
@@ -252,12 +296,12 @@ export const CheckoutPage = () => {
                                         }}>
                                                     {suggestions.map((s, idx) => (
                                                         <li
-                                                            key={s.place_id || idx}
+                                                            key={String(s.place_id ?? idx)}
                                                             style={{ padding: 8, cursor: 'pointer', borderBottom: '1px solid #eee' }}
                                                             onMouseDown={() => {
-                                                                const lat = parseFloat(s.lat);
-                                                                const lon = parseFloat(s.lon);
-                                                                setVille(s.display_name);
+                                                                const lat = parseFloat(String(s.lat));
+                                                                const lon = parseFloat(String(s.lon));
+                                                                setVille(String(s.display_name));
                                                                 setCoords([lat, lon]);
                                                                 // Déterminer la zone correspondante côté parent
                                                                 const matched = zones.find(z => {
@@ -268,7 +312,7 @@ export const CheckoutPage = () => {
                                                                 setShowSuggestions(false);
                                                             }}
                                                         >
-                                                            {s.display_name}
+                                                            {String(s.display_name)}
                                                         </li>
                                                     ))}
                                         </ul>

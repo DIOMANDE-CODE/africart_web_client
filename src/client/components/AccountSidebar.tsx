@@ -4,7 +4,7 @@ import { useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useState } from "react";
 
-export const AccountSidebar = ({ }) => {
+export const AccountSidebar = () => {
     const location = useLocation();
     const { logout } = useAuth();
     const [isLoggingOut, setIsLoggingOut] = useState(false);

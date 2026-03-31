@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import "../styles/ConfirmationPage.css";
-import { Link } from "react-router-dom";
-import { getOrderDetail } from "../services/commandeService";
+import { Link, useNavigate } from "react-router-dom";
+import { useOrderDetail } from "../services/commandeService";
 import { Alert } from "../components/Alert";
 import { formatDate } from "../utils/formatDate";
 import { ConfirmationSkeleton } from "../skeletons";
@@ -21,6 +21,8 @@ export const ConfirmationPage = () => {
     const [numero, setNumero] = useState("")
     const { loadingSession } = useAuth();
     const [loading, setLoading] = useState(true)
+    const [orderError, setOrderError] = useState<string | null>(null);
+    const navigate = useNavigate();
 
     const handleCopy = async () => {
         try {
@@ -32,50 +34,62 @@ export const ConfirmationPage = () => {
         }
     };
 
-    const detail_commande = async () => {
-        try {
-            const response = await getOrderDetail(reference_commande!)
+    const {
+        data: orderDetail,
+        error: orderDetailError,
+        isLoading: orderDetailLoading,
+    } = useOrderDetail(reference_commande!);
 
-            if (response.status === 200) {
-                const detail = response.data.data
-                console.log(response.data.data);
-                setIdentifiantCommande(detail.identifiant_commande)
-                setStatusCommande(detail.etat_commande)
-                setDateCommande(formatDate(detail.date_commande))
-                setTotalPaye(detail.total_ttc)
-                setCodeLivraison(detail.code_livraison)
-                setLieuLivraison(detail.lieu_livraison)
-                setNomClient(detail.client.nom_client)
-                setNumero(detail.client.numero_telephone_client)
-
-            }
-        }
-        catch (error: any) {
-            if (error.response) {
-                const status = error.response.status;
-
-                if (status === 400) {
-                    setAlert({ message: "Erreur de saisie.", type: "error" });
-                } else if (status === 500) {
-                    setAlert({ message: "Erreur survenue au serveur.", type: "error" });
-                } else if (status === 401) {
-                    setAlert({ message: "Accès non autorisé.", type: "error" });
-                } else {
-                    setAlert({ message: "Erreur inconnue.", type: "error" });
-                }
-            }
-        }
-        finally {
-            setLoading(false)
-        }
+    if (orderDetail) {
+        const detail_commande = orderDetail.data.data;
+        setIdentifiantCommande(detail_commande.identifiant_commande)
+        setStatusCommande(detail_commande.etat_commande)
+        setDateCommande(formatDate(detail_commande.date_commande))
+        setTotalPaye(detail_commande.total_ttc)
+        setCodeLivraison(detail_commande.code_livraison)
+        setLieuLivraison(detail_commande.lieu_livraison)
+        setNomClient(detail_commande.client.nom_client)
+        setNumero(detail_commande.client.numero_telephone_client)
     }
 
-    useEffect(() => {
-        if (loadingSession) return; // wait for session check
-        detail_commande()
-    }, [reference_commande, loadingSession])
+    if (orderDetailError) {
+        const errAny = orderDetailError as unknown as Record<string, unknown>;
+        const parsedObj = errAny?.parsed as Record<string, unknown> | undefined;
+        const parsed = (typeof parsedObj?.message === 'string' ? parsedObj.message : null) || (typeof errAny?.message === 'string' ? errAny.message : null) || 'Erreur lors de la récupération de la commande.';
+        const resp = errAny?.response as Record<string, unknown> | undefined;
+        const status = resp?.status ?? null;
+        setOrderError(parsed);
+        if (status === 400) setAlert({ message: parsed || 'Erreur de saisie.', type: 'error' });
+        else if (status === 500) setAlert({ message: parsed || 'Erreur survenue au serveur.', type: 'error' });
+        else if (status === 401) {
+            setAlert({ message: parsed || 'Accès non autorisé.', type: 'error' });
+            navigate('/login', { replace: true });
+            return;
+        } else setAlert({ message: parsed || 'Erreur inconnue.', type: 'error' });
+    }
 
-    if (loadingSession) return <ConfirmationSkeleton />;
+
+    const isGlobalLoading = loadingSession || orderDetailLoading;
+
+    if (isGlobalLoading) return <ConfirmationSkeleton />;
+
+    if (orderError) {
+        return (
+            <section className="page" aria-live="assertive">
+                <div className="container" style={{ padding: '80px 0', textAlign: 'center' }}>
+                    <i className="fas fa-exclamation-circle fa-3x mb-3" style={{ color: '#e74c3c' }} />
+                    <h2>Erreur lors de la récupération</h2>
+                    <p style={{ marginBottom: 18 }}>{orderError}</p>
+                    <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+                        <button className="btn btn-primary" onClick={() => { setLoading(true); setOrderError(null); }}>
+                            Réessayer
+                        </button>
+                        <Link to="/products" className="btn-back">Voir les produits</Link>
+                    </div>
+                </div>
+            </section>
+        );
+    }
 
     if (reference_commande === null || !identifiantCommande) {
         return (

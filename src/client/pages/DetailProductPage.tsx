@@ -1,6 +1,6 @@
 import { StarRating } from "../components/StarRating";
 import "../styles/DetailProductPage.css";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { noteProduct, useProductDetail, useAverageRating } from "../services/produitService";
 import { trackView, getSimilarCategoryProducts, getCoPurchaseProducts } from "../services/recommandationService";
@@ -23,7 +23,7 @@ export const DetailProductPage = () => {
     const [productQty, setProductQty] = useState(1);
 
     const [rating, setRating] = useState(0);
-    const [ratingSent, setRatingSent] = useState(false);
+    const [, setRatingSent] = useState(false);
     const [ratingError, setRatingError] = useState<string | null>(null);
     const [ratingDisabled, setRatingDisabled] = useState(false);
 
@@ -45,12 +45,16 @@ export const DetailProductPage = () => {
     const coDirRef = useRef<'right' | 'left'>('right');
 
     // Récupération des données API
-    const { data: productData, isLoading: isProductLoading, isError: isProductError } = useProductDetail(id ?? "");
+    const { data: productData, isLoading: isProductLoading, isError: isProductError, error: productError, refetch: refetchProduct } = useProductDetail(id ?? "");
     const { data: ratingData, isLoading: isRatingLoading } = useAverageRating(id ?? "");
 
     const detailProduct = productData?.data || null;
     const averageRating = ratingData?.data?.note_moyenne ?? null;
     const averageCount = ratingData?.data?.nombre_notations ?? 0;
+
+    const [sameError, setSameError] = useState<string | null>(null);
+    const [coError, setCoError] = useState<string | null>(null);
+    const navigate = useNavigate();
 
     // 2. LOGIQUE DES EFFETS (useEffect)
 
@@ -79,18 +83,25 @@ export const DetailProductPage = () => {
                 updateCartItem({ ...itemInCart, ...detailProduct });
             }
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [detailProduct]);
 
     // Fetch Same Category
     useEffect(() => {
         const getSameCategoryProduct = async () => {
             if (!id) return;
+            setSameError(null);
             try {
                 const res = await getSimilarCategoryProducts(id);
                 if (res.status === 200 && res.data?.data) {
                     setSameCategory(res.data.data.produits || []);
                 }
-            } catch (e) { } finally { setLoadingSameCategory(false); }
+            } catch (e: unknown) {
+                const errAny = e as Record<string, unknown>;
+                const parsedObj = errAny?.parsed as Record<string, unknown> | undefined;
+                const parsed = (typeof parsedObj?.message === 'string' ? parsedObj.message : null) || (typeof errAny?.message === 'string' ? errAny.message : null) || 'Erreur lors de la récupération des produits similaires.';
+                setSameError(parsed);
+            } finally { setLoadingSameCategory(false); }
         }
         getSameCategoryProduct();
     }, [id]);
@@ -99,12 +110,18 @@ export const DetailProductPage = () => {
     useEffect(() => {
         const getCoAchatProduct = async () => {
             if (!id) return;
+            setCoError(null);
             try {
                 const res = await getCoPurchaseProducts(id);
                 if (res.status === 200 && res.data?.data) {
                     setCoAchat(res.data.data.produits || []);
                 }
-            } catch (e) { } finally { setLoadingCoAchat(false); }
+            } catch (e: unknown) {
+                const errAny = e as Record<string, unknown>;
+                const parsedObj = errAny?.parsed as Record<string, unknown> | undefined;
+                const parsed = (typeof parsedObj?.message === 'string' ? parsedObj.message : null) || (typeof errAny?.message === 'string' ? errAny.message : null) || 'Erreur lors de la récupération des produits fréquemment achetés.';
+                setCoError(parsed);
+            } finally { setLoadingCoAchat(false); }
         }
         getCoAchatProduct();
     }, [id]);
@@ -183,7 +200,7 @@ export const DetailProductPage = () => {
                 setRatingDisabled(true);
                 setAlert({ message: response.data.message || "Merci pour votre note !", type: "success" });
             }
-        } catch (error: any) {
+        } catch {
             setRatingError("Erreur lors de la notation.");
         }
     };
@@ -202,6 +219,35 @@ export const DetailProductPage = () => {
         el.scrollBy({ left: dir === 'left' ? -step : step, behavior: 'smooth' });
     };
 
+    // Retry helpers for recommendations
+    const refetchSame = async () => {
+        if (!id) return;
+        setLoadingSameCategory(true);
+        setSameError(null);
+        try {
+            const res = await getSimilarCategoryProducts(id);
+            if (res.status === 200 && res.data?.data) setSameCategory(res.data.data.produits || []);
+        } catch (e: unknown) {
+            const errAny = e as Record<string, unknown>;
+            const parsedObj = errAny?.parsed as Record<string, unknown> | undefined;
+            setSameError((typeof parsedObj?.message === 'string' ? parsedObj.message : null) || (typeof errAny?.message === 'string' ? errAny.message : null) || 'Erreur lors de la récupération des produits similaires.');
+        } finally { setLoadingSameCategory(false); }
+    };
+
+    const refetchCo = async () => {
+        if (!id) return;
+        setLoadingCoAchat(true);
+        setCoError(null);
+        try {
+            const res = await getCoPurchaseProducts(id);
+            if (res.status === 200 && res.data?.data) setCoAchat(res.data.data.produits || []);
+        } catch (e: unknown) {
+            const errAny = e as Record<string, unknown>;
+            const parsedObj = errAny?.parsed as Record<string, unknown> | undefined;
+            setCoError((typeof parsedObj?.message === 'string' ? parsedObj.message : null) || (typeof errAny?.message === 'string' ? errAny.message : null) || 'Erreur lors de la récupération des produits fréquemment achetés.');
+        } finally { setLoadingCoAchat(false); }
+    };
+
     // 4. RENDUS CONDITIONNELS (Après les hooks)
     const isInitialLoading = loadingSession || isProductLoading || isRatingLoading;
 
@@ -214,7 +260,30 @@ export const DetailProductPage = () => {
     }
 
     if (isProductError || !detailProduct) {
-        return <Alert message="Produit introuvable" type="error" />;
+        const errAny = productError as Record<string, unknown> | null;
+        const parsedObj = errAny?.parsed as Record<string, unknown> | undefined;
+        const parsed = (typeof parsedObj?.message === 'string' ? parsedObj.message : null) || (typeof errAny?.message === 'string' ? errAny.message : null) || 'Produit introuvable.';
+        const resp = errAny?.response as Record<string, unknown> | undefined;
+        const status = resp?.status ?? null;
+        if (status === 401) {
+            navigate('/login', { replace: true });
+            return null;
+        }
+        return (
+            <section className="page" aria-live="assertive">
+                <div className="container" style={{ padding: '80px 0', textAlign: 'center' }}>
+                    <i className="fas fa-exclamation-circle fa-3x mb-3" style={{ color: '#e74c3c' }} />
+                    <h2>Erreur de chargement</h2>
+                    <p style={{ marginBottom: 18 }}>{parsed}</p>
+                    <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+                        <button className="btn btn-primary" onClick={() => refetchProduct && refetchProduct()}>
+                            Réessayer
+                        </button>
+                        <Link to="/products" className="btn-back">Voir les produits</Link>
+                    </div>
+                </div>
+            </section>
+        );
     }
 
     // 5. RENDU PRINCIPAL
@@ -227,6 +296,13 @@ export const DetailProductPage = () => {
                     <div className="section-header"><h3>Fréquemment achetés ensemble</h3></div>
                     {loadingCoAchat ? (
                         <RecommendationSkeleton count={6} />
+                    ) : coError ? (
+                        <div role="alert" style={{ padding: 18, textAlign: 'center' }}>
+                            <div style={{ marginBottom: 8, color: '#e74c3c' }}>{coError}</div>
+                            <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+                                <button className="btn btn-primary" onClick={() => refetchCo()}>Réessayer</button>
+                            </div>
+                        </div>
                     ) : coAchat.length > 0 && (
                         <>
                             <button type="button" className="carousel-nav prev" onClick={() => scrollCo('left')}>‹</button>
@@ -351,6 +427,13 @@ export const DetailProductPage = () => {
                     <div className="section-header"><h3>Produits similaires</h3></div>
                     {loadingSameCategory ? (
                         <RecommendationSkeleton count={6} />
+                    ) : sameError ? (
+                        <div role="alert" style={{ padding: 18, textAlign: 'center' }}>
+                            <div style={{ marginBottom: 8, color: '#e74c3c' }}>{sameError}</div>
+                            <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+                                <button className="btn btn-primary" onClick={() => refetchSame()}>Réessayer</button>
+                            </div>
+                        </div>
                     ) : sameCategory.length > 0 && (
                         <>
                             <button type="button" className="carousel-nav prev" onClick={() => scrollSame('left')}>‹</button>

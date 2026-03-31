@@ -13,7 +13,7 @@ export interface CreateOrderPayload {
     nom_client: string | null | undefined;
     numero_telephone_client: string | null | undefined;
   };
-  items: any[];
+  items: unknown[];
   total_ht: number;
   lieu_livraison: string;
   identifiant_zone: string | null;
@@ -26,7 +26,7 @@ export const createOrder = (payload: CreateOrderPayload) =>
 
 
 // Recupérer les Detail de la commande
-export const getOrderDetail = (reference: string) => {
+export const useOrderDetail = (reference: string) => {
   return useQuery({
     queryKey: ['orderDetail', reference],
     queryFn: async () => {
@@ -39,7 +39,7 @@ export const getOrderDetail = (reference: string) => {
 }
 
 // Service pour récupérer l'historique des commandes d'un utilisateur
-export const getUsersOrders = (email: string) => {
+export const useUsersOrders = (email: string) => {
   return useInfiniteQuery({
     // La clé dépend de l'email : si l'utilisateur change, le cache se vide
     queryKey: ['userOrders', email],
@@ -72,7 +72,7 @@ export const getUsersOrders = (email: string) => {
         const url = new URL(nextUrl);
         const offset = url.searchParams.get('offset');
         return offset ? parseInt(offset, 10) : undefined;
-      } catch (e) {
+      } catch {
         return undefined;
       }
     },

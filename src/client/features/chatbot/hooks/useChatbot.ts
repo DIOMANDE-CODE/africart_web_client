@@ -9,7 +9,7 @@ export type MessageUI = {
   id: string;
   sender: "bot" | "user";
   text: string;
-  data?: any;
+  data?: unknown;
 };
 
 
@@ -42,14 +42,18 @@ export function useChatbot() {
         const response = await getChatHistory(isAuth);
         if (!response.data.history) return;
 
-        const historyMessages: MessageUI[] = response.data.history.map(
-          (h: any, i: number) => ({
+        const historyMessages: MessageUI[] = response.data.history.map((h: unknown, i: number) => {
+          const hh = h as Record<string, unknown>;
+          const role = hh.role === 'user' ? 'user' : 'bot';
+          const parts = Array.isArray(hh.parts) ? hh.parts as unknown[] : [];
+          const firstText = parts[0] && typeof parts[0] === 'object' ? (parts[0] as Record<string, unknown>)['text'] as string | undefined : undefined;
+          return {
             id: `h-${i}`,
-            sender: h.role === "user" ? "user" : "bot",
-            text: h.parts?.[0]?.text ?? "",
-            data: h.data ?? undefined,
-          })
-        );
+            sender: role,
+            text: firstText ?? "",
+            data: hh.data ?? undefined,
+          } as MessageUI;
+        });
 
         // Attach top-level `data` to the last bot message (backend structure)
         if (response.data.data) {
@@ -105,14 +109,18 @@ export function useChatbot() {
 
       // Backend can return either a full `history` array or a single `reply`
       if (response.data.history && Array.isArray(response.data.history)) {
-        const historyMessages: MessageUI[] = response.data.history.map(
-          (h: any, i: number) => ({
+        const historyMessages: MessageUI[] = response.data.history.map((h: unknown, i: number) => {
+          const hh = h as Record<string, unknown>;
+          const role = hh.role === 'user' ? 'user' : 'bot';
+          const parts = Array.isArray(hh.parts) ? hh.parts as unknown[] : [];
+          const firstText = parts[0] && typeof parts[0] === 'object' ? (parts[0] as Record<string, unknown>)['text'] as string | undefined : undefined;
+          return {
             id: `h-${i}-${Date.now()}`,
-            sender: h.role === "user" ? "user" : "bot",
-            text: h.parts?.[0]?.text ?? "",
-            data: h.data ?? undefined,
-          })
-        );
+            sender: role,
+            text: firstText ?? "",
+            data: hh.data ?? undefined,
+          } as MessageUI;
+        });
 
         if (response.data.data) {
           for (let j = historyMessages.length - 1; j >= 0; j--) {

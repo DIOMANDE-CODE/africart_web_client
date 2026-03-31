@@ -4,15 +4,17 @@ import { useAuth } from "../context/AuthContext";
 import { updateProfile } from "../services/utilisateurService";
 import { changePassword } from "../services/authService";
 import { Alert } from "../components/Alert";
+import { useNavigate } from "react-router-dom";
 import { validateEmail } from "../utils/emailChecking";
 import { validationNumeroCI } from "../utils/validerNumero";
 import AccountSkeleton from "../skeletons/AccountSkeleton";
 import { AccountSidebar } from "../components/AccountSidebar";
 
 export const AccountPage = () => {
-    const [activeTab, setActiveTab] = useState("profile");
+    const [activeTab] = useState("profile");
     const { user, setUser, logout, loadingSession } = useAuth()
     const [alert, setAlert] = useState<{ message: string; type: "success" | "error" } | null>(null);
+    const navigate = useNavigate();
     const [ancienMdp, setAncienMdp] = useState("")
     const [nouveauMdp, setNouveauMdp] = useState("")
     const [confirmMdp, setConfirmMdp] = useState("")
@@ -21,7 +23,6 @@ export const AccountPage = () => {
     const [numUser, setNumUser] = useState("")
     const [isProfileModified, setIsProfileModified] = useState(false)
     const [isLoadingProfile, setIsLoadingProfile] = useState(false)
-    const [isLoading, setIsLoading] = useState(true)
     const [isLoadingPassword, setIsLoadingPassword] = useState(false)
 
 
@@ -85,20 +86,27 @@ export const AccountPage = () => {
                 role: 'client',
             });
 
-            if (response.status === 200) {
+            if (Number(response.status) === 200) {
                 setUser(response.data.data)
                 setAlert({ message: "Profil mis à jour avec succès.", type: "success" });
             }
-        } catch (error: any) {
-            if (error.response) {
-                const status = error.response.status;
-                if (status === 400) {
-                    setAlert({ message: "Erreur de saisie.", type: "error" });
-                } else if (status === 500) {
-                    setAlert({ message: "Erreur survenue au serveur.", type: "error" });
-                } else {
-                    setAlert({ message: "Erreur lors de la mise à jour.", type: "error" });
-                }
+        } catch (error: unknown) {
+            const errAny = error as Record<string, unknown>;
+            const parsedObj = errAny?.parsed as Record<string, unknown> | undefined;
+            const parsed = (typeof parsedObj?.message === 'string' ? parsedObj.message : null) || (typeof errAny?.message === 'string' ? errAny.message : null) || 'Erreur lors de la mise à jour.';
+            const resp = errAny?.response as Record<string, unknown> | undefined;
+            const status = resp?.status != null ? Number(resp.status) : null;
+
+            if (status === 400) {
+                setAlert({ message: parsed || 'Erreur de saisie.', type: 'error' });
+            } else if (status === 401) {
+                setAlert({ message: 'Session expirée. Veuillez vous reconnecter.', type: 'error' });
+                logout();
+                navigate('/login', { replace: true });
+            } else if (status === 500) {
+                setAlert({ message: parsed || 'Erreur survenue au serveur.', type: 'error' });
+            } else {
+                setAlert({ message: parsed, type: 'error' });
             }
         } finally {
             setIsLoadingProfile(false);
@@ -125,22 +133,29 @@ export const AccountPage = () => {
         try {
             const response = await changePassword(ancienMdp, nouveauMdp);
 
-            if (response.status === 200) {
+            if (Number(response.status) === 200) {
                 setAlert({ message: "Mot de passe mis à jour avec succès.", type: "success" });
                 setAncienMdp("");
                 setNouveauMdp("");
                 setConfirmMdp("");
             }
-        } catch (error: any) {
-            if (error.response) {
-                const status = error.response.status;
-                if (status === 400) {
-                    setAlert({ message: "Mot de passe actuel incorrect.", type: "error" });
-                } else if (status === 500) {
-                    setAlert({ message: "Erreur survenue au serveur.", type: "error" });
-                } else {
-                    setAlert({ message: "Erreur lors de la mise à jour.", type: "error" });
-                }
+        } catch (error: unknown) {
+            const errAny = error as Record<string, unknown>;
+            const parsedObj = errAny?.parsed as Record<string, unknown> | undefined;
+            const parsed = (typeof parsedObj?.message === 'string' ? parsedObj.message : null) || (typeof errAny?.message === 'string' ? errAny.message : null) || 'Erreur lors de la mise à jour.';
+            const resp = errAny?.response as Record<string, unknown> | undefined;
+            const status = resp?.status != null ? Number(resp.status) : null;
+
+            if (status === 400) {
+                setAlert({ message: parsed || 'Mot de passe actuel incorrect.', type: 'error' });
+            } else if (status === 401) {
+                setAlert({ message: 'Session expirée. Veuillez vous reconnecter.', type: 'error' });
+                logout();
+                navigate('/login', { replace: true });
+            } else if (status === 500) {
+                setAlert({ message: parsed || 'Erreur survenue au serveur.', type: 'error' });
+            } else {
+                setAlert({ message: parsed, type: 'error' });
             }
         } finally {
             setIsLoadingPassword(false);

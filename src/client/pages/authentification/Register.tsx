@@ -20,6 +20,8 @@ export const Register = () => {
 
   const navigate = useNavigate();
   const timeoutRef = useRef<number | null>(null);
+  const emailRef = useRef<HTMLInputElement | null>(null);
+  const passwordRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     return () => {
@@ -94,9 +96,9 @@ export const Register = () => {
         email_utilisateur: email,
         password,
         numero_telephone_utilisateur: cleanedNumTel,
-        role: 'client',
+        role: 'client', 
       });
-      if (response.status === 201) {
+      if (Number(response.status) === 201) {
         setAlert({ message: "Inscription terminée! Veuillez-vous connecter", type: "success" });
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
         timeoutRef.current = window.setTimeout(() => {
@@ -109,26 +111,28 @@ export const Register = () => {
         setConfirmPassword("");
         setNumTel("");
       }
-    } catch (error: any) {
-      if (error.response) {
-        const status = error.response.status;
+    } catch (error: unknown) {
+      const errAny = error as Record<string, unknown>;
+      const parsedObj = errAny?.parsed as Record<string, unknown> | undefined;
+      const parsed = (typeof parsedObj?.message === 'string' ? parsedObj.message : null) || (typeof errAny?.message === 'string' ? errAny.message : null) || 'Erreur lors de l\'inscription.';
+      const resp = errAny?.response as Record<string, unknown> | undefined;
+      const status = resp?.status != null ? Number(resp.status) : null;
 
-        if (status === 400) {
-          setAlert({ message: "Erreur de saisie.", type: "error" });
-        } else if (status === 500) {
-          setAlert({ message: "Erreur serveur. Veuillez réessayer plus tard.", type: "error" });
-        } else if (status === 401) {
-          setAlert({ message: "Identifiants invalides.", type: "error" });
-        } else if (status === 404) {
-          setAlert({ message: "Compte inexistant", type: "error" })
-        }
-        else if (status === 409) {
-          setAlert({ message: "Compte existe déjà", type: "error" })
-        }
-
-        else {
-          setAlert({ message: error.message || "Erreur survenue.", type: "error" });
-        }
+      if (status === 400) {
+        setAlert({ message: parsed || 'Erreur de saisie.', type: 'error' });
+        emailRef.current?.focus();
+      } else if (status === 401) {
+        setAlert({ message: parsed || 'Non autorisé.', type: 'error' });
+        passwordRef.current?.focus();
+      } else if (status === 409) {
+        setAlert({ message: parsed || 'Un compte avec cet e-mail existe déjà.', type: 'error' });
+        emailRef.current?.focus();
+      } else if (status === 429) {
+        setAlert({ message: parsed || 'Trop de requêtes. Réessayez plus tard.', type: 'error' });
+      } else if (status === 500) {
+        setAlert({ message: parsed || 'Erreur serveur. Veuillez réessayer plus tard.', type: 'error' });
+      } else {
+        setAlert({ message: parsed, type: 'error' });
       }
     }
     setLoading(false);

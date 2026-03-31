@@ -4,9 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 /**
  * Recommandations & suivi de vues — appels API
  */
-
 export const getPersonalRecommendations = () =>
-  api.get('/produits/recommendations/?type=personal');
+  api.get('/recommendations?type=personal');
 
 export const getPopularRecommendations = () =>
   api.get('/recommandations/', { params: { type: 'personnalise' } });
@@ -20,9 +19,7 @@ export const getCoPurchaseProducts = (productId: string) =>
 export const trackView = (productId: string) =>
   api.post('/recommandations/vue/', { produit_id: productId }, { withCredentials: true });
 
-
 // HOOKS TANSTACK QUERY
-
 export const usePersonalRecommendations = (enabled = true) => {
   return useQuery({
     queryKey: ['personalRecommendations'],
@@ -32,7 +29,6 @@ export const usePersonalRecommendations = (enabled = true) => {
     },
     placeholderData: (previousData) => previousData, // Affiche les données précédentes pendant le rechargement
     enabled,
-
   })
 }
 

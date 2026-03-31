@@ -32,7 +32,7 @@ export const ProductsPage = () => {
     const sentinelRef = useRef<HTMLDivElement | null>(null);
 
     // --- 1. CHARGEMENT DES CATÉGORIES ---
-    const { data: catData, isError: isCatError } = useCategories();
+    const { data: catData, isError: isCatError, error: catError, refetch: refetchCategories } = useCategories();
     const categories = catData?.data?.data || catData?.data || catData || [];
 
     // --- 2. INFINITE SCROLL AVEC TANSTACK QUERY ---
@@ -43,7 +43,9 @@ export const ProductsPage = () => {
         isFetchingNextPage,
         isLoading: isLoadingProd,
         isFetching: isFetchingProd,
-        isError: isProdError
+        isError: isProdError,
+        error: prodError,
+        refetch: refetchProducts
     } = useProducts({
         limit,
         categorie: categorieParams,
@@ -70,25 +72,27 @@ export const ProductsPage = () => {
         if (!isErrorRecPopular) return;
 
         // Gestion d'erreur détaillée selon le code HTTP
-        const status = (axiosError as any)?.response?.status ?? null;
+        const errAny = axiosError as unknown as Record<string, unknown>;
+        const resp = errAny?.response as Record<string, unknown> | undefined;
+        const status = resp?.status ?? null;
         console.warn('Popular recommendations error', status, axiosError);
 
         switch (status) {
             case 401:
-                setAlert({ message: "Session expirée. Veuillez vous reconnecter.", type: "error" });
+                setTimeout(() => setAlert({ message: "Session expirée. Veuillez vous reconnecter.", type: "error" }), 0);
                 navigate('/login', { replace: true });
                 break;
             case 403:
-                setAlert({ message: "Accès refusé aux recommandations.", type: "error" });
+                setTimeout(() => setAlert({ message: "Accès refusé aux recommandations.", type: "error" }), 0);
                 break;
             case 404:
-                setAlert({ message: "Aucune recommandation trouvée pour votre compte.", type: "error" });
+                setTimeout(() => setAlert({ message: "Aucune recommandation trouvée pour votre compte.", type: "error" }), 0);
                 break;
             case 429:
-                setAlert({ message: "Trop de requêtes. Réessayez dans un instant.", type: "error" });
+                setTimeout(() => setAlert({ message: "Trop de requêtes. Réessayez dans un instant.", type: "error" }), 0);
                 break;
             default:
-                setAlert({ message: "Erreur serveur lors de la récupération des recommandations.", type: "error" });
+                setTimeout(() => setAlert({ message: "Erreur serveur lors de la récupération des recommandations.", type: "error" }), 0);
                 break;
         }
     }, [isErrorRecPopular, axiosError, navigate]);
@@ -124,14 +128,43 @@ export const ProductsPage = () => {
     // Alertes d'erreurs
     useEffect(() => {
         if (isCatError || isProdError) {
-            setAlert({ message: "Erreur lors de la récupération des produits.", type: "error" });
+            const sourceError = isCatError ? catError : prodError;
+            const errAny = sourceError as unknown as Record<string, unknown>;
+            const parsedObj = errAny?.parsed as Record<string, unknown> | undefined;
+            const parsed = (typeof parsedObj?.message === 'string' ? parsedObj.message : null) || (typeof errAny?.message === 'string' ? errAny.message : null) || 'Erreur lors de la récupération des produits.';
+            setTimeout(() => setAlert({ message: parsed, type: "error" }), 0);
         }
-    }, [isCatError, isProdError]);
+    }, [isCatError, isProdError, catError, prodError]);
 
     // État global de chargement pour les Skeletons
     const isGlobalLoading = loadingSession || isLoadingProd || isLoadingRecPopular;
 
     // --- RENDU ---
+
+    // If there is a fatal error and no products to show, render an error state with retry
+    if ((isCatError || isProdError) && allProducts.length === 0) {
+        const sourceError = isCatError ? catError : prodError;
+        const errAny = sourceError as unknown as Record<string, unknown>;
+        const parsedObj = errAny?.parsed as Record<string, unknown> | undefined;
+        const parsedMessage = (typeof parsedObj?.message === 'string' ? parsedObj.message : null) || (typeof errAny?.message === 'string' ? errAny.message : null) || 'Erreur lors du chargement des produits.';
+        return (
+            <section className="page products-page active">
+                <div className="container" style={{ padding: '80px 0' }}>
+                    <div style={{ textAlign: 'center' }} role="alert" aria-live="assertive">
+                        <i className="fas fa-exclamation-circle fa-3x mb-3" style={{ color: '#e74c3c' }} />
+                        <h2>Impossible de charger les produits</h2>
+                        <p style={{ marginBottom: 18 }}>{parsedMessage}</p>
+                        <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+                            <button className="btn btn-primary" onClick={() => { refetchCategories?.(); refetchProducts?.(); }}>
+                                Réessayer
+                            </button>
+                            <button className="btn-back" onClick={() => navigate('/')}>Retour à l'accueil</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        );
+    }
 
     if (loadingSession || (isLoadingProd && allProducts.length === 0)) {
         return <ProductSkeletonGrid count={12} />;
@@ -193,8 +226,8 @@ export const ProductsPage = () => {
                             <label className="filter-label">Catégorie</label>
                             <select className="filter-select" value={categorieParams} onChange={(e) => setCategoryParams(e.target.value)}>
                                 <option value="">Toutes les catégories</option>
-                                {categories.map((cat: any) => (
-                                    <option key={cat.identifiant_categorie} value={cat.nom_categorie}>{cat.nom_categorie}</option>
+                                {categories.map((cat: Record<string, unknown>) => (
+                                    <option key={String(cat.identifiant_categorie)} value={String(cat.nom_categorie)}>{String(cat.nom_categorie)}</option>
                                 ))}
                             </select>
                         </div>
@@ -225,7 +258,7 @@ export const ProductsPage = () => {
                                             {cart.some(i => i.identifiant_produit === p.identifiant_produit) ? (
                                                 <button className="btn btn-success btn-sm" disabled><i className="fas fa-check" /> Ajouté</button>
                                             ) : (
-                                                <button className="btn btn-primary btn-sm" onClick={() => addToCart({ ...p, quantite_produit: 1 } as any)}>
+                                                <button className="btn btn-primary btn-sm" onClick={() => addToCart({ ...p, quantite_produit: 1 } as Product)}>
                                                     <i className="fas fa-cart-plus" /> Ajouter
                                                 </button>
                                             )}

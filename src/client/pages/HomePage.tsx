@@ -24,54 +24,46 @@ export const HomePage = () => {
 
     // --- 2. RÉCUPÉRATION DES CATÉGORIES (TanStack Query) ---
     // Note: Assure-toi que ton service utilise l'URL correcte : /categories/list/ (avec slash)
-    const { data: catData, isLoading: isLoadingCat, isError: isCatError } = useCategories();
+    const { data: catData, isLoading: isLoadingCat, isError: isCatError, error: catError, refetch: refetchCategories } = useCategories();
 
     useEffect(() => {
         if (catData) {
             // Mapping flexible selon la structure de ta réponse Django
             const rawData = catData.data?.data || catData.data || catData;
-            setCategory(Array.isArray(rawData) ? rawData : []);
+            setTimeout(() => setCategory(Array.isArray(rawData) ? rawData : []), 0);
         }
         if (isCatError) {
-            setAlert({ message: "Erreur de connexion au serveur (404 ou 500).", type: "error" });
+            const errAny = catError as unknown as Record<string, unknown>;
+            const parsedObj = errAny?.parsed as Record<string, unknown> | undefined;
+            const parsed = (typeof parsedObj?.message === 'string' ? parsedObj.message : null) || (typeof errAny?.message === 'string' ? errAny.message : null) || 'Erreur de connexion au serveur.';
+            setTimeout(() => setAlert({ message: parsed, type: "error" }), 0);
         }
-    }, [catData, isCatError]);
+    }, [catData, isCatError, catError]);
 
     // RECUPERATION DES RECOMMANDATIONS
     const {
         data: recPersonalData,
         isLoading: isLoadingRecPersonal,
         isError: isErrorRecPersonal,
-        error: axiosError
+        error: recPersonalError,
     } = usePersonalRecommendations(!!user && !loadingSession);
 
 
     useEffect(() => {
         if (!isErrorRecPersonal) return;
-
-        // Gestion d'erreur détaillée selon le code HTTP
-        const status = (axiosError as any)?.response?.status ?? null;
-        console.warn('Personal recommendations error', status, axiosError);
-
-        switch (status) {
-            case 401:
-                setAlert({ message: "Session expirée. Veuillez vous reconnecter.", type: "error" });
-                navigate('/login', { replace: true });
-                break;
-            case 403:
-                setAlert({ message: "Accès refusé aux recommandations.", type: "error" });
-                break;
-            case 404:
-                setAlert({ message: "Aucune recommandation trouvée pour votre compte.", type: "error" });
-                break;
-            case 429:
-                setAlert({ message: "Trop de requêtes. Réessayez dans un instant.", type: "error" });
-                break;
-            default:
-                setAlert({ message: "Erreur serveur lors de la récupération des recommandations.", type: "error" });
-                break;
+        const errAny = recPersonalError as unknown as Record<string, unknown>;
+        const parsedObj = errAny?.parsed as Record<string, unknown> | undefined;
+        const parsed = (typeof parsedObj?.message === 'string' ? parsedObj.message : null) || (typeof errAny?.message === 'string' ? errAny.message : null) || 'Erreur lors de la récupération des recommandations personnalisées.';
+        const resp = errAny?.response as Record<string, unknown> | undefined;
+        const status = resp?.status ?? null;
+        console.warn('Personal recommendations error', status, recPersonalError);
+        if (status === 401) {
+            setTimeout(() => setAlert({ message: parsed, type: 'error' }), 0);
+            navigate('/login', { replace: true });
+            return;
         }
-    }, [isErrorRecPersonal, axiosError, navigate]);
+        // setAlert({ message: parsed, type: 'error' });
+    }, [isErrorRecPersonal, recPersonalError, navigate]);
 
 
     const recommendedPersonal: Product[] = useMemo(() => {
@@ -89,34 +81,24 @@ export const HomePage = () => {
         data: recPopularData,
         isLoading: isLoadingRecPopular,
         isError: isErrorRecPopular,
+        error: recPopularError,
     } = usePopularRecommendations();
 
     useEffect(() => {
         if (!isErrorRecPopular) return;
-
-        // Gestion d'erreur détaillée selon le code HTTP
-        const status = (axiosError as any)?.response?.status ?? null;
-        console.warn('Popular recommendations error', status, axiosError);
-
-        switch (status) {
-            case 401:
-                setAlert({ message: "Session expirée. Veuillez vous reconnecter.", type: "error" });
-                navigate('/login', { replace: true });
-                break;
-            case 403:
-                setAlert({ message: "Accès refusé aux recommandations.", type: "error" });
-                break;
-            case 404:
-                setAlert({ message: "Aucune recommandation trouvée pour votre compte.", type: "error" });
-                break;
-            case 429:
-                setAlert({ message: "Trop de requêtes. Réessayez dans un instant.", type: "error" });
-                break;
-            default:
-                setAlert({ message: "Erreur serveur lors de la récupération des recommandations.", type: "error" });
-                break;
+        const errAny = recPopularError as unknown as Record<string, unknown>;
+        const parsedObj = errAny?.parsed as Record<string, unknown> | undefined;
+        const parsed = (typeof parsedObj?.message === 'string' ? parsedObj.message : null) || (typeof errAny?.message === 'string' ? errAny.message : null) || 'Erreur lors de la récupération des recommandations populaires.';
+        const resp = errAny?.response as Record<string, unknown> | undefined;
+        const status = resp?.status ?? null;
+        console.warn('Popular recommendations error', status, recPopularError);
+        if (status === 401) {
+            setTimeout(() => setAlert({ message: parsed, type: 'error' }), 0);
+            navigate('/login', { replace: true });
+            return;
         }
-    }, [isErrorRecPopular, axiosError, navigate]);
+        setTimeout(() => setAlert({ message: parsed, type: 'error' }), 0);
+    }, [isErrorRecPopular, recPopularError, navigate]);
 
 
     const recommendedPopular: ProductRecommended[] = useMemo(() => {
@@ -179,6 +161,30 @@ export const HomePage = () => {
 
     // État global de chargement pour les Skeletons
     const isGlobalLoading = loadingSession || isLoadingCat || isLoadingRecPersonal || isLoadingRecPopular;
+
+    // Si la récupération des catégories a échoué et qu'il n'y a aucune catégorie, afficher un écran d'erreur
+    if (isCatError && category.length === 0) {
+        const errAny = catError as unknown as Record<string, unknown>;
+        const parsedObj = errAny?.parsed as Record<string, unknown> | undefined;
+        const parsedMessage = (typeof parsedObj?.message === 'string' ? parsedObj.message : null) || (typeof errAny?.message === 'string' ? errAny.message : null) || 'Impossible de charger les catégories.';
+        return (
+            <section id="home" className="page">
+                <div className="container" style={{ padding: '80px 0' }}>
+                    <div style={{ textAlign: 'center' }} role="alert" aria-live="assertive">
+                        <i className="fas fa-exclamation-circle fa-3x mb-3" style={{ color: '#e74c3c' }} />
+                        <h2>Erreur de chargement</h2>
+                        <p style={{ marginBottom: 18 }}>{parsedMessage}</p>
+                        <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+                            <button className="btn btn-primary" onClick={() => refetchCategories && refetchCategories()}>
+                                Réessayer
+                            </button>
+                            <button className="btn-back" onClick={() => navigate('/products')}>Voir les produits</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        );
+    }
 
     return (
         <>

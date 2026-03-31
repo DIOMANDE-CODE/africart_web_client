@@ -3,6 +3,7 @@ import 'leaflet/dist/leaflet.css';
 import { useState, useEffect } from 'react';
 import L from 'leaflet';
 import { Alert } from './Alert';
+import { useCallback, useMemo } from 'react';
 
 // Fix pour les icônes Leaflet par défaut
 const DefaultIcon = L.icon({
@@ -40,7 +41,7 @@ export default function MapDelivery({ zones, onLocationSelected }: {
     const [alert, setAlert] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
     // Fonction pour trouver la zone (Yakro ou Intérieur par défaut)
-    const findAppropriateZone = (lat: number, lng: number): Zone | null => {
+    const findAppropriateZone = useCallback((lat: number, lng: number): Zone | null => {
         // 1. On cherche d'abord si le point est dans un rayon précis (ex: Yakro)
         const specificZone = zones.find(z => {
             const distance = L.latLng(lat, lng).distanceTo(L.latLng(z.latitude, z.longitude));
@@ -51,23 +52,23 @@ export default function MapDelivery({ zones, onLocationSelected }: {
 
         // 2. Si on est en dehors des cercles, on cherche la zone "Intérieur" dans la liste
         return zones.find(z => z.nom_zone.toLowerCase().includes("intérieur")) || null;
-    };
+    }, [zones]);
 
     // Détecter la zone Yamoussoukro si fournie par le backend
-    const yamoZone = zones.find(z => z.nom_zone && z.nom_zone.toLowerCase().includes('yamoussoukro')) || null;
-    const yamoCenter: [number, number] = yamoZone ? [yamoZone.latitude, yamoZone.longitude] : [6.8276, -5.2767];
-    const yamoRadius = yamoZone ? yamoZone.rayon_metres : 30000; // fallback 30km
+    const yamoZone = useMemo(() => zones.find(z => z.nom_zone && z.nom_zone.toLowerCase().includes('yamoussoukro')) || null, [zones]);
+    const yamoCenter: [number, number] = useMemo(() => yamoZone ? [yamoZone.latitude, yamoZone.longitude] : [6.8276, -5.2767], [yamoZone]);
+    const yamoRadius = useMemo(() => yamoZone ? yamoZone.rayon_metres : 30000, [yamoZone]); // fallback 30km
 
     // Calcul des bounds (approx) pour limiter le déplacement sur la carte
-    const computeBounds = (center: [number, number], radiusMeters: number) => {
+    const computeBounds = (center: [number, number], radiusMeters: number): L.LatLngBoundsExpression => {
         const lat = center[0];
         const dLat = radiusMeters / 111000; // ~deg latitude
         const dLon = radiusMeters / (111000 * Math.cos((lat * Math.PI) / 180));
         const southWest: [number, number] = [lat - dLat, center[1] - dLon];
         const northEast: [number, number] = [lat + dLat, center[1] + dLon];
-        return [southWest, northEast];
+        return [southWest, northEast] as L.LatLngBoundsExpression;
     };
-    const yamoBounds = computeBounds(yamoCenter, yamoRadius);
+    const yamoBounds: L.LatLngBoundsExpression = computeBounds(yamoCenter, yamoRadius);
 
     useEffect(() => {
         if (pos === null && "geolocation" in navigator) {
@@ -96,7 +97,7 @@ export default function MapDelivery({ zones, onLocationSelected }: {
                 { enableHighAccuracy: true }
             );
         }
-    }, [zones, pos]);
+    }, [zones, pos, findAppropriateZone, onLocationSelected, yamoCenter, yamoRadius]);
 
     const LocationMarker = () => {
         useMapEvents({
@@ -130,7 +131,7 @@ export default function MapDelivery({ zones, onLocationSelected }: {
             {pos && (
                 <MapContainer center={pos} zoom={12} style={{ height: '100%', width: '100%' }}
                     // limiter la navigation et le pannage à Yamoussoukro
-                    maxBounds={yamoBounds as any}
+                    maxBounds={yamoBounds}
                     maxBoundsViscosity={0.9}
                 >
                     <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />

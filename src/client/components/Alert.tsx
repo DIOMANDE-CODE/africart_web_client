@@ -24,7 +24,7 @@ export const Alert: React.FC<AlertProps> = ({ message, type, onClose, duration =
   const handleKeyClose = (e: React.KeyboardEvent<HTMLButtonElement>) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
-      onClose && onClose();
+      onClose?.();
     }
   };
 

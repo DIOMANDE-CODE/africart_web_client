@@ -91,7 +91,7 @@ const Chatbot: React.FC = () => {
                       <div className="msg-bubble msg-bubble--bot">
                         <ReactMarkdown>{m.text}</ReactMarkdown>
                       </div>
-                      {m.data && <ChatDataBlock data={m.data} />}
+                      {m.data != null && <ChatDataBlock data={m.data} />}
                     </div>
                   </div>
                 ) : (

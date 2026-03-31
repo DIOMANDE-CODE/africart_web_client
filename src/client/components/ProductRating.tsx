@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { useAverageRating } from "../services/produitService";
 
 interface ProductRatingProps {
@@ -6,27 +6,12 @@ interface ProductRatingProps {
 }
 
 export const ProductRating: React.FC<ProductRatingProps> = ({ productId }) => {
-  const [count, setCount] = useState<number | null>(null);
-
-  useEffect(() => {
-    const fetchCount = async () => {
-      try {
-        const res = await useAverageRating(productId);
-        if (res.data.success && res.data.data) {
-          setCount(res.data.data.nombre_notations);
-        } else {
-          setCount(0);
-        }
-      } catch {
-        setCount(0);
-      }
-    };
-    fetchCount();
-  }, [productId]);
+  const { data } = useAverageRating(productId);
+  const count = (data && data.data && typeof data.data.nombre_notations === 'number') ? data.data.nombre_notations : 0;
 
   return (
     <span style={{ fontSize: 13, color: '#888', marginLeft: 4 }}>
-      {count !== null ? `(${count} avis)` : ''}
+      {count > 0 ? `(${count} avis)` : ''}
     </span>
   );
 };
